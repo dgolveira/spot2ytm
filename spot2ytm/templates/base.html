@@ -18,6 +18,7 @@
     <nav>
       <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Dashboard</a>
       <a href="/playlists" {% if request.url.path.startswith('/playlists') %}aria-current="page"{% endif %}>Playlists</a>
+      <a href="/import" {% if request.url.path.startswith('/import') %}aria-current="page"{% endif %}>Import</a>
     </nav>
     <div class="conn">
       <span class="dot {{ 'ok' if spotify_connected else 'off' }}" title="Spotify {{ 'connected' if spotify_connected else 'not connected' }}"></span>Spotify

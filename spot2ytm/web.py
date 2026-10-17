@@ -21,7 +21,8 @@ from . import __version__, matching
 from .config import Settings
 from .db import ACTIVE_STATUSES, Store, row_candidates, row_track
 from .jobs import Worker, new_transfer
-from .models import Candidate
+from .models import Candidate, Track
+from .public import EMBED_TRACK_LIMIT, PublicSpotify, PublicSpotifyError, parse_link, track_ids
 from .spotify import LIKED_SONGS_ID, SpotifyAuthError, SpotifyClient, SpotifyError, authorize_url, make_pkce_pair
 from .ytm import YTMError, YTMusicClient
 
@@ -50,12 +51,14 @@ def create_app(
     spotify: SpotifyClient | None = None,
     yt: YTMusicClient | None = None,
     start_worker: bool = True,
+    public: PublicSpotify | None = None,
 ) -> FastAPI:
     settings = settings or Settings.load()
     store = Store(settings.db_path)
     yt = yt or YTMusicClient(settings.ytmusic_auth_file)
     spotify = spotify or SpotifyClient(settings.spotify_client_id, settings.spotify_token_file)
-    worker = Worker(store, spotify, yt, settings.search_delay)
+    public = public or PublicSpotify()
+    worker = Worker(store, spotify, yt, settings.search_delay, public=public)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -89,6 +92,7 @@ def create_app(
     templates.env.filters["fromjson"] = json.loads
     templates.env.globals["version"] = __version__
     templates.env.globals["MATCH_THRESHOLD"] = matching.MATCH_THRESHOLD
+    templates.env.globals["EMBED_TRACK_LIMIT"] = EMBED_TRACK_LIMIT
 
     def render(request: Request, name: str, status_code: int = 200, headers: dict | None = None, **ctx):
         ctx.setdefault("spotify_connected", app.state.spotify.connected)
@@ -249,6 +253,52 @@ def create_app(
         if len(created) == 1:
             return RedirectResponse(f"/transfers/{created[0]}", 303)
         return RedirectResponse("/", 303)
+
+    # -- import without a Spotify login ----------------------------------------
+
+    def import_form(request: Request, status_code: int = 200, error: str | None = None, **values):
+        return render(request, "import.html", status_code=status_code, error=error,
+                      privacy_options=PRIVACY_OPTIONS, values=values)
+
+    @app.get("/import", response_class=HTMLResponse)
+    def import_page(request: Request):
+        return import_form(request, auto_push=True)
+
+    @app.post("/import", response_class=HTMLResponse)
+    def import_submit(
+        request: Request, source: str = Form(""), name: str = Form(""),
+        privacy: str = Form("PRIVATE"), auto_push: str = Form(""),
+    ):
+        values = {"source": source, "name": name, "privacy": privacy, "auto_push": auto_push == "1"}
+        if privacy not in PRIVACY_OPTIONS:
+            privacy = "PRIVATE"
+        if not app.state.yt.connected:
+            return import_form(request, 400, "Connect YouTube Music first.", **values)
+        ids = track_ids(source)
+        link = parse_link(source)
+        name = name.strip()[:150]
+        if ids:
+            title = name or "Imported from Spotify"
+            # Same name, same YouTube Music playlist: importing again only adds new songs.
+            key = store.key_for_name(title) or "paste:" + " ".join(title.lower().split())
+            transfer_id = store.create_transfer(key, title, "", None, privacy, values["auto_push"])
+            store.add_tracks(transfer_id, [Track(title="", artists=[], spotify_id=i) for i in ids])
+        elif link and link[0] in ("playlist", "album"):
+            try:
+                playlist, tracks = public.collection(*link)
+            except PublicSpotifyError as exc:
+                return import_form(request, 400, str(exc), **values)
+            if not tracks:
+                return import_form(request, 400, "That playlist has no songs that can be read.", **values)
+            if name:
+                playlist.name = name
+            transfer_id = new_transfer(store, playlist, privacy, values["auto_push"])
+            store.add_tracks(transfer_id, tracks)
+        else:
+            return import_form(request, 400, "Paste a Spotify playlist or album link, or a list of song links.",
+                               **values)
+        worker.enqueue(transfer_id)
+        return RedirectResponse(f"/transfers/{transfer_id}", 303)
 
     # -- transfers ------------------------------------------------------------
 

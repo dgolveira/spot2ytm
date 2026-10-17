@@ -16,6 +16,7 @@ from typing import Protocol
 from . import matching
 from .db import Store, row_candidates, row_track
 from .models import Candidate, Playlist, Track
+from .public import PublicSpotifyError
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +25,10 @@ MAX_CANDIDATES = 6
 
 class SpotifySource(Protocol):
     def playlist_tracks(self, playlist_id: str) -> list[Track]: ...
+
+
+class TrackSource(Protocol):
+    def track(self, track_id: str) -> Track: ...
 
 
 class YTMusicTarget(Protocol):
@@ -55,9 +60,13 @@ def description_for(playlist_description: str) -> str:
 
 
 class Worker:
-    def __init__(self, store: Store, spotify: SpotifySource, yt: YTMusicTarget, search_delay: float = 0.2):
+    def __init__(
+        self, store: Store, spotify: SpotifySource, yt: YTMusicTarget, search_delay: float = 0.2,
+        public: TrackSource | None = None,
+    ):
         self.store = store
         self.spotify = spotify
+        self.public = public
         self.yt = yt
         self.search_delay = search_delay
         self._queue: queue.Queue[int] = queue.Queue()
@@ -148,6 +157,8 @@ class Worker:
             self.store.update_transfer(transfer_id, status="fetching")
             tracks = self.spotify.playlist_tracks(transfer["spotify_playlist_id"])
             self.store.add_tracks(transfer_id, tracks)
+        if not self._fill_pasted(transfer_id):
+            return False
 
         self.store.update_transfer(transfer_id, status="matching")
         pending = self.store.tracks(transfer_id, ("pending",))
@@ -175,6 +186,24 @@ class Worker:
                     time.sleep(self.search_delay)
             done += 1
             self.store.update_transfer(transfer_id, progress=done)
+        return True
+
+    def _fill_pasted(self, transfer_id: int) -> bool:
+        """Look up songs that were imported as bare track links."""
+        rows = [r for r in self.store.tracks(transfer_id, ("pending",)) if not r["title"]]
+        if not rows:
+            return True
+        self.store.update_transfer(transfer_id, status="fetching", progress=0)
+        for i, row in enumerate(rows):
+            if i % 10 == 0 and self._cancelled(transfer_id):
+                return False
+            try:
+                self.store.fill_track(row["id"], self.public.track(row["spotify_id"]))
+            except PublicSpotifyError as exc:
+                log.warning("track %s: %s", row["spotify_id"], exc)
+                self.store.fill_track(row["id"], Track(title=f"Unavailable song ({row['spotify_id']})", artists=[]))
+                self.store.set_track_match(row["id"], "not_found", None, None, [])
+            self.store.update_transfer(transfer_id, progress=i + 1)
         return True
 
     def _push(self, transfer_id: int) -> None:

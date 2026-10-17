@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Import · spot2ytm{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>Import without logging in to Spotify</h1>
+  {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+  <p class="muted">Works with Spotify Free: spot2ytm reads Spotify's public pages, so no developer app is needed.</p>
+
+  <ol class="steps">
+    <li><strong>Public playlist or album:</strong> paste its link (<em>Share → Copy link</em>).
+      Spotify's public page only lists the first {{ EMBED_TRACK_LIMIT }} songs.</li>
+    <li><strong>Liked Songs, private or longer playlists:</strong> open them in the Spotify app on your computer,
+      click a song, press <kbd>Ctrl</kbd>+<kbd>A</kbd> (<kbd>Cmd</kbd>+<kbd>A</kbd> on a Mac) and then
+      <kbd>Ctrl</kbd>+<kbd>C</kbd>, and paste here. You get one link per song, with no limit.</li>
+  </ol>
+
+  <form method="post" action="/import" class="stack">
+    <label for="source">Playlist link, or song links</label>
+    <textarea id="source" name="source" rows="10" required spellcheck="false"
+              placeholder="https://open.spotify.com/playlist/…&#10;&#10;or&#10;&#10;https://open.spotify.com/track/…&#10;https://open.spotify.com/track/…">{{ values.source or '' }}</textarea>
+
+    <label for="name">Name on YouTube Music <span class="muted small">(optional for a playlist link)</span></label>
+    <input id="name" name="name" maxlength="150" value="{{ values.name or '' }}" placeholder="Liked Songs">
+
+    <label for="privacy">Privacy on YouTube Music</label>
+    <select id="privacy" name="privacy">
+      {% for opt in privacy_options %}<option value="{{ opt }}" {% if values.privacy == opt %}selected{% endif %}>{{ opt | capitalize }}</option>{% endfor %}
+    </select>
+
+    <label class="checkbox">
+      <input type="checkbox" name="auto_push" value="1" {% if values.auto_push %}checked{% endif %}>
+      Create the playlist as soon as matching finishes
+      <span class="muted small">Uncheck to review the songs first.</span>
+    </label>
+
+    <button class="btn primary">Import</button>
+  </form>
+  <p class="muted small">Importing the same playlist again, or a song list with the same name, only adds the new songs to the same YouTube Music playlist.</p>
+</section>
+{% endblock %}

@@ -4,7 +4,7 @@
      hx-swap="outerHTML">
   <div class="status-line">
     {% set t = transfer %}{% include "partials/status_badge.html" %}
-    {% if transfer.status == 'fetching' %}<span class="muted">Reading songs from Spotify…</span>
+    {% if transfer.status == 'fetching' %}<span class="muted">Reading songs from Spotify…{% if transfer.total %} {{ transfer.progress }} / {{ transfer.total }}{% endif %}</span>
     {% elif transfer.status == 'matching' %}<span class="muted">Searching YouTube Music · {{ transfer.progress }} / {{ transfer.total }}</span>
     {% elif transfer.status == 'pushing' %}<span class="muted">Adding songs · {{ counts.added }} / {{ counts.matched }}</span>
     {% elif transfer.status == 'queued' %}<span class="muted">Waiting for other transfers to finish…</span>

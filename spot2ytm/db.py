@@ -153,6 +153,14 @@ class Store:
         ).fetchall()
         return {r["spotify_playlist_id"]: r for r in rows}
 
+    def key_for_name(self, name: str) -> str | None:
+        """Source id of the latest transfer with this name, to export into the same playlist."""
+        row = self._conn().execute(
+            "SELECT spotify_playlist_id FROM transfers WHERE lower(name) = lower(?) ORDER BY id DESC LIMIT 1",
+            (name,),
+        ).fetchone()
+        return row["spotify_playlist_id"] if row else None
+
     def link_playlist(self, spotify_playlist_id: str, yt_playlist_id: str) -> None:
         with self.tx() as conn:
             conn.execute(
@@ -181,6 +189,14 @@ class Store:
             conn.execute(
                 "UPDATE transfers SET total = ?, updated_at = ? WHERE id = ?",
                 (len(tracks), time.time(), transfer_id),
+            )
+
+    def fill_track(self, track_row_id: int, track: Track) -> None:
+        """Complete a track that was added with only its Spotify id."""
+        with self.tx() as conn:
+            conn.execute(
+                "UPDATE transfer_tracks SET title = ?, artists = ?, album = ?, duration_ms = ? WHERE id = ?",
+                (track.title, json.dumps(track.artists), track.album, track.duration_ms, track_row_id),
             )
 
     def tracks(self, transfer_id: int, statuses: tuple[str, ...] | None = None) -> list[sqlite3.Row]:

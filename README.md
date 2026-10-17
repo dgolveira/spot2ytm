@@ -33,11 +33,12 @@
 ## Features
 
 - **All your playlists**: the ones you created, the ones you collaborate on, and your **Liked Songs**.
+- **Works with Spotify Free**: no login needed, paste a playlist link or the song links copied from the Spotify app.
 - **Smart matching**: compares title, artists, duration and *version*, so you get the studio recording instead of a live take, a karaoke or a sped-up edit.
 - **Review screen**: confident matches go straight in. Uncertain ones are shown side by side with alternatives, and you can accept, pick another version, search by hand or skip.
 - **Re-export safely**: exporting the same playlist again only adds the new songs to the same YouTube Music playlist. No duplicates.
 - **Remembers everything**: a local match cache means a song is searched once, and your manual choices are reused in every playlist.
-- ⏯️ **Resumable**: transfers run in the background. Close the app halfway and it picks up where it stopped.
+- **Resumable**: transfers run in the background. Close the app halfway and it picks up where it stopped.
 - **CSV export** of every transfer, including what was not found.
 - **Private by design**: runs on your machine, Spotify access is read-only, nothing goes to third-party servers.
 - Light and dark themes, works on mobile.
@@ -96,9 +97,28 @@ Then open **http://127.0.0.1:8000**. Your data is kept in `./data`.
 
 You do this once. Both steps are explained on screen, too.
 
-### 1. Spotify (about 2 minutes)
+### 1. Spotify
 
-Spotify only lets apps read your library through a developer app that **you** own. It is free.
+There are two ways to read your music. Pick one:
+
+| | Log in (Premium) | Import with links (Free or Premium) |
+|---|---|---|
+| Needs | Spotify Premium and a developer app | Nothing |
+| Picks playlists for you | Yes, including Liked Songs | No, you paste each playlist |
+| Limits | Only playlists you own or collaborate on | Playlist links read the first 100 songs; pasted song links have no limit |
+
+#### Import with links (no login)
+
+Open **Import** in spot2ytm and paste either:
+
+- **a public playlist or album link** (*Share → Copy link* in Spotify). Spotify's public page only lists the first 100 songs; or
+- **the songs themselves**: open the playlist (or your Liked Songs) in the Spotify app on your computer, click a song, press <kbd>Ctrl</kbd>+<kbd>A</kbd> then <kbd>Ctrl</kbd>+<kbd>C</kbd> (<kbd>Cmd</kbd> on a Mac). That copies one link per song, with no limit, and also works for private playlists.
+
+spot2ytm reads the public pages behind Spotify's embeddable player, without any login or token. Then skip to step 2.
+
+#### Log in (Premium, about 2 minutes)
+
+Spotify only lets apps read your library through a developer app that **you** own, and only if your account has Premium.
 
 1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) and click **Create app**.
 2. Give it any name and description.
@@ -113,6 +133,7 @@ That's all. No client secret is needed: spot2ytm uses the [PKCE flow](https://de
 
 > [!NOTE]
 > Spotify's Development Mode requires the app owner to have **Spotify Premium**, and allows up to 5 users per app.
+> On a Free account the **Web API** option is greyed out: use [Import with links](#import-with-links-no-login) instead.
 
 ### 2. YouTube Music
 
@@ -130,7 +151,7 @@ The headers last as long as that browser session (they become invalid if you log
 
 ### 3. Transfer
 
-Open **Playlists**, tick the ones you want, choose the privacy for the new playlists (private by default) and click **Transfer**.
+Open **Playlists**, tick the ones you want, choose the privacy for the new playlists (private by default) and click **Transfer**. Without a Spotify login, use **Import** instead.
 
 ## How matching works
 
@@ -185,7 +206,7 @@ If you change the port, register the matching redirect URI (`http://127.0.0.1:90
 <details>
 <summary><b>Some of my playlists say "followed only, songs not available"</b></summary>
 
-Since March 2026 the Spotify API only returns the songs of playlists you **own or collaborate on**. For a playlist you only follow (including Spotify's editorial ones), open it in Spotify, select all songs (<kbd>Ctrl</kbd>+<kbd>A</kbd> / <kbd>Cmd</kbd>+<kbd>A</kbd>), right-click → *Add to playlist → New playlist*, and refresh spot2ytm.
+Since March 2026 the Spotify API only returns the songs of playlists you **own or collaborate on**. For a playlist you only follow (including Spotify's editorial ones), open it in Spotify, select all songs (<kbd>Ctrl</kbd>+<kbd>A</kbd> / <kbd>Cmd</kbd>+<kbd>A</kbd>), right-click → *Add to playlist → New playlist*, and refresh spot2ytm. Or press <kbd>Ctrl</kbd>+<kbd>C</kbd> instead and paste the songs in **Import**.
 </details>
 
 <details>

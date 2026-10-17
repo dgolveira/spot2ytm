@@ -32,11 +32,12 @@
 ## Recursos
 
 - **Todas as suas playlists**: as que você criou, as colaborativas e as suas **Músicas Curtidas**.
+- **Funciona com Spotify Free**: sem login, basta colar o link da playlist ou os links das músicas copiados do app do Spotify.
 - **Correspondência inteligente**: compara título, artistas, duração e *versão*. Você recebe a gravação de estúdio, e não a ao vivo, o karaokê ou a versão acelerada.
 - **Tela de revisão**: o que tem alta confiança entra direto. O que é duvidoso aparece lado a lado com alternativas, e você aceita, escolhe outra versão, busca na mão ou pula.
 - **Exportar de novo sem medo**: exportar a mesma playlist outra vez só adiciona as músicas novas na mesma playlist do YouTube Music. Sem duplicatas.
 - **Lembra de tudo**: com o cache local, cada música é buscada uma vez só, e suas escolhas manuais valem para todas as playlists.
-- ⏯️ **Retomável**: as transferências rodam em segundo plano. Se fechar o app no meio, ele continua de onde parou.
+- **Retomável**: as transferências rodam em segundo plano. Se fechar o app no meio, ele continua de onde parou.
 - **Exportação em CSV** de cada transferência, incluindo o que não foi encontrado.
 - **Privado**: roda na sua máquina, o acesso ao Spotify é só leitura e nada passa por servidores de terceiros.
 - Tema claro e escuro, e funciona no celular.
@@ -95,9 +96,28 @@ Depois abra **http://127.0.0.1:8000**. Os dados ficam em `./data`.
 
 Você faz isso uma vez só, e a própria tela explica cada passo.
 
-### 1. Spotify (uns 2 minutos)
+### 1. Spotify
 
-O Spotify só deixa apps lerem sua biblioteca por meio de um app de desenvolvedor que seja **seu**. É grátis.
+Há dois jeitos de ler suas músicas. Escolha um:
+
+| | Login (Premium) | Importar com links (Free ou Premium) |
+|---|---|---|
+| Precisa de | Spotify Premium e um app de desenvolvedor | Nada |
+| Lista suas playlists | Sim, inclusive as Curtidas | Não, você cola cada playlist |
+| Limites | Só playlists que você criou ou em que colabora | Link de playlist lê as primeiras 100 músicas; links de músicas colados não têm limite |
+
+#### Importar com links (sem login)
+
+Abra **Import** no spot2ytm e cole:
+
+- **o link de uma playlist ou álbum público** (*Compartilhar → Copiar link* no Spotify). A página pública do Spotify só lista as primeiras 100 músicas; ou
+- **as próprias músicas**: abra a playlist (ou as Curtidas) no app do Spotify no computador, clique numa música e aperte <kbd>Ctrl</kbd>+<kbd>A</kbd> e depois <kbd>Ctrl</kbd>+<kbd>C</kbd> (<kbd>Cmd</kbd> no Mac). Isso copia um link por música, sem limite, e funciona também com playlists privadas.
+
+O spot2ytm lê as páginas públicas do player embutido do Spotify, sem login nem token. Depois, siga para o passo 2.
+
+#### Login (Premium, uns 2 minutos)
+
+O Spotify só deixa apps lerem sua biblioteca por meio de um app de desenvolvedor que seja **seu**, e só se a conta tiver Premium.
 
 1. Entre no [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) e clique em **Create app**.
 2. Dê qualquer nome e descrição.
@@ -112,6 +132,7 @@ Só isso. Não precisa de client secret, porque o spot2ytm usa o [fluxo PKCE](ht
 
 > [!NOTE]
 > O modo de desenvolvimento do Spotify exige que o dono do app tenha **Spotify Premium** e permite até 5 usuários por app.
+> Em conta Free a opção **Web API** fica desabilitada: use [Importar com links](#importar-com-links-sem-login).
 
 ### 2. YouTube Music
 
@@ -129,7 +150,7 @@ Os cabeçalhos valem enquanto durar a sessão do navegador. Se você sair da con
 
 ### 3. Transferir
 
-Abra **Playlists**, marque as que quiser, escolha a privacidade das novas playlists (privada por padrão) e clique em **Transfer**.
+Abra **Playlists**, marque as que quiser, escolha a privacidade das novas playlists (privada por padrão) e clique em **Transfer**. Sem login no Spotify, use **Import**.
 
 ## Como a correspondência funciona
 
@@ -178,7 +199,7 @@ Funciona sem configurar nada. Se quiser mudar algo, copie o [`.env.example`](.en
 <details>
 <summary><b>Algumas playlists aparecem como "followed only, songs not available"</b></summary>
 
-Desde março de 2026, a API do Spotify só devolve as músicas de playlists que você **criou ou em que colabora**. Para uma playlist que você só segue (inclusive as editoriais do Spotify), abra no Spotify, selecione todas as músicas (<kbd>Ctrl</kbd>+<kbd>A</kbd>), clique com o botão direito → *Adicionar à playlist → Nova playlist* e atualize o spot2ytm.
+Desde março de 2026, a API do Spotify só devolve as músicas de playlists que você **criou ou em que colabora**. Para uma playlist que você só segue (inclusive as editoriais do Spotify), abra no Spotify, selecione todas as músicas (<kbd>Ctrl</kbd>+<kbd>A</kbd>), clique com o botão direito → *Adicionar à playlist → Nova playlist* e atualize o spot2ytm. Ou aperte <kbd>Ctrl</kbd>+<kbd>C</kbd> e cole as músicas em **Import**.
 </details>
 
 <details>

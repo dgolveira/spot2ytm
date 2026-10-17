@@ -22,8 +22,11 @@
       <a class="btn" href="/auth/spotify/login">Connect Spotify</a>
       <a class="link small" href="/setup/spotify">Change client ID</a>
     {% else %}
-      <p class="muted">You need a free Spotify developer app (takes ~2 minutes).</p>
+      <p class="muted">Logging in needs a Spotify developer app, which Spotify only allows on Premium accounts.</p>
       <a class="btn" href="/setup/spotify">Set up Spotify</a>
+    {% endif %}
+    {% if not spotify_user %}
+      <p class="muted small">On Spotify Free? Skip this step and <a href="/import">import with links</a> instead.</p>
     {% endif %}
   </article>
 
@@ -41,7 +44,7 @@
     {% endif %}
   </article>
 
-  <article class="card {{ '' if spotify_user and yt_account else 'disabled' }}">
+  <article class="card {{ '' if yt_account else 'disabled' }}">
     <div class="card-head">
       <span class="logo go" aria-hidden="true"></span>
       <h2>3 · Transfer</h2>
@@ -49,8 +52,11 @@
     <p class="muted">Choose which playlists to copy. Your Liked Songs can be copied too.</p>
     {% if spotify_user and yt_account %}
       <a class="btn primary" href="/playlists">Choose playlists</a>
+      <a class="link small" href="/import">or import with links</a>
+    {% elif yt_account %}
+      <a class="btn primary" href="/import">Import with links</a>
     {% else %}
-      <span class="btn disabled" aria-disabled="true">Connect both accounts first</span>
+      <span class="btn disabled" aria-disabled="true">Connect YouTube Music first</span>
     {% endif %}
   </article>
 </section>

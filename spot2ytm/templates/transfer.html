@@ -12,6 +12,14 @@
   </div>
 </div>
 
+{% if transfer.spotify_playlist_id.startswith('public:playlist:') and transfer.total >= EMBED_TRACK_LIMIT %}
+<div class="alert info">
+  Spotify's public page only lists the first {{ EMBED_TRACK_LIMIT }} songs of a playlist. If this one has more,
+  <a href="/import">import it again</a> by pasting its song links (open it in the Spotify app, <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>C</kbd>)
+  with the name <strong>{{ transfer.name }}</strong>.
+</div>
+{% endif %}
+
 {% if not active and transfer.total %}
 <nav class="tabs" aria-label="Filter songs">
   {% set tabs = [
