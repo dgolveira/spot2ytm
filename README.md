@@ -168,7 +168,10 @@ The headers last as long as that browser session (they become invalid if you log
 
 ### 3. Transfer
 
-Open **Playlists**, tick the ones you want, choose the privacy for the new playlists (private by default) and click **Transfer**. Without a Spotify login, use **Import** instead.
+1. Pick the playlists: in **Import** (Exportify file or links) or, with a Spotify login, in **Playlists**. Click **Find songs**.
+2. spot2ytm searches YouTube Music and stops. Nothing is created yet.
+3. Check the result: open a playlist to see every song next to what was found, and fix the uncertain ones.
+4. Confirm: on the playlist page, or for several at once in **Waiting for your confirmation** on the dashboard. Choose the privacy (private by default) and click **Create**.
 
 ## How matching works
 
@@ -247,7 +250,7 @@ About 1 second per song the first time (one or two searches each). Songs already
 <details>
 <summary><b>Will the song order be kept?</b></summary>
 
-Yes for everything added in one go. If *Create the playlist as soon as matching finishes* is on, songs you fix later in the review screen are appended at the end. Turn it off to review first and keep the exact order.
+Yes. spot2ytm always lets you review the matches before creating the playlist, so everything you accepted goes in at once, in the Spotify order. Songs you fix after the playlist was created are added at the end.
 </details>
 
 <details>

@@ -267,7 +267,7 @@ class Worker:
         self.store.cache_match(row["cache_key"], "skipped", None, None, candidates, manual=True)
 
 
-def new_transfer(store: Store, playlist: Playlist, privacy: str, auto_push: bool) -> int:
+def new_transfer(store: Store, playlist: Playlist, privacy: str = "PRIVATE", auto_push: bool = False) -> int:
     return store.create_transfer(
         playlist.id, playlist.name, playlist.description, playlist.image_url, privacy, auto_push
     )

@@ -80,22 +80,30 @@ def app_and_client(settings):
         yield app, client
 
 
-def test_import_playlist_link(app_and_client):
+def test_import_playlist_link_waits_for_confirmation(app_and_client):
     app, client = app_and_client
-    resp = client.post("/import", data={"source": f"https://open.spotify.com/playlist/{PLAYLIST_ID}",
-                                        "auto_push": "1"}, follow_redirects=False)
+    resp = client.post("/import/link", data={"link": f"https://open.spotify.com/playlist/{PLAYLIST_ID}"},
+                       follow_redirects=False)
     assert resp.status_code == 303
     tid = int(resp.headers["location"].rsplit("/", 1)[1])
     app.state.worker.run_once(tid)
-    transfer = app.state.store.get_transfer(tid)
-    assert transfer["status"] == "done" and transfer["name"] == "Britpop"
+    store = app.state.store
+    assert store.get_transfer(tid)["status"] == "review"
+    assert app.state.yt.playlists == {}  # nothing created before confirming
+
+    page = client.get(f"/transfers/{tid}").text
+    assert "Create playlist on YouTube Music" in page and "Ready: 1 of 1 songs" in page
+    client.post(f"/transfers/{tid}/push", data={"privacy": "UNLISTED"})
+    app.state.worker.run_once(tid)
+    transfer = store.get_transfer(tid)
+    assert transfer["status"] == "done" and transfer["privacy"] == "UNLISTED" and transfer["name"] == "Britpop"
     assert app.state.yt.playlists[transfer["yt_playlist_id"]] == ["v1"]
 
 
 def test_import_pasted_song_links(app_and_client):
     app, client = app_and_client
     pasted = f"https://open.spotify.com/track/{WONDERWALL}\nhttps://open.spotify.com/track/{HURT}"
-    resp = client.post("/import", data={"source": pasted, "name": "Liked Songs"}, follow_redirects=False)
+    resp = client.post("/import/songs", data={"songs": pasted, "name": "Liked Songs"}, follow_redirects=False)
     tid = int(resp.headers["location"].rsplit("/", 1)[1])
     app.state.worker.run_once(tid)
 
@@ -108,16 +116,20 @@ def test_import_pasted_song_links(app_and_client):
     # Importing again under the same name targets the same YouTube Music playlist.
     client.post(f"/transfers/{tid}/push")
     app.state.worker.run_once(tid)
-    again = client.post("/import", data={"source": pasted, "name": "liked songs"}, follow_redirects=False)
+    again = client.post("/import/songs", data={"songs": pasted, "name": "liked_songs"}, follow_redirects=False)
     tid2 = int(again.headers["location"].rsplit("/", 1)[1])
     store = app.state.store
     assert store.get_transfer(tid2)["yt_playlist_id"] == store.get_transfer(tid)["yt_playlist_id"]
 
 
-def test_import_rejects_other_text(app_and_client):
+def test_import_rejects_bad_input(app_and_client):
     _, client = app_and_client
-    resp = client.post("/import", data={"source": "https://open.spotify.com/user/someone"})
-    assert resp.status_code == 400 and "Paste a Spotify playlist" in resp.text
+    resp = client.post("/import/link", data={"link": "https://open.spotify.com/user/someone"})
+    assert resp.status_code == 400 and "not a Spotify playlist" in resp.text
+    resp = client.post("/import/songs", data={"songs": "hello", "name": "x"})
+    assert resp.status_code == 400 and "No Spotify song links" in resp.text
+    resp = client.post("/import/songs", data={"songs": f"https://open.spotify.com/track/{HURT}", "name": " "})
+    assert resp.status_code == 400 and "Give the playlist a name" in resp.text
 
 
 EXPORTIFY_HEADER = ("Track URI,Track Name,Artist URI(s),Artist Name(s),Album URI,Album Name,Album Artist URI(s),"
@@ -171,18 +183,26 @@ def test_parse_exportify_rejects_other_files():
 def test_import_exportify_upload_and_confirm(app_and_client):
     app, client = app_and_client
     csv_text = exportify_csv(exportify_row(f"spotify:track:{WONDERWALL}", "Wonderwall", ["Oasis"], "", 258000))
-    page = client.post("/import/exportify", files=[("files", ("liked_songs.csv", csv_text.encode(), "text/csv"))])
-    assert page.status_code == 200 and 'value="Liked songs"' in page.text
+    page = client.post("/import/exportify", files=[("files", ("liked.csv", csv_text.encode(), "text/csv"))])
+    assert page.status_code == 200 and 'value="Liked Songs"' in page.text
     token = page.text.split('name="token" value="')[1].split('"')[0]
 
     resp = client.post("/import/exportify/confirm", data={
-        "token": token, "playlist_id": "0", "name_0": "Músicas Curtidas", "auto_push": "1",
+        "token": token, "playlist_id": "0", "name_0": "Músicas Curtidas",
     }, follow_redirects=False)
     tid = int(resp.headers["location"].rsplit("/", 1)[1])
     app.state.worker.run_once(tid)
-    transfer = app.state.store.get_transfer(tid)
-    assert transfer["name"] == "Músicas Curtidas" and transfer["status"] == "done"
-    assert app.state.yt.playlists[transfer["yt_playlist_id"]] == ["v1"]
+    assert app.state.store.get_transfer(tid)["status"] == "review"
     # The upload can only be confirmed once.
     assert client.post("/import/exportify/confirm", data={"token": token}, follow_redirects=False).headers[
         "location"] == "/import"
+
+    # The dashboard lists it for confirmation; confirming there creates it.
+    dashboard = client.get("/").text
+    assert "Waiting for your confirmation" in dashboard and "Músicas Curtidas" in dashboard
+    client.post("/transfers/push-many", data={"playlist_id": str(tid), "privacy": "PRIVATE"})
+    app.state.worker.run_once(tid)
+    transfer = app.state.store.get_transfer(tid)
+    assert transfer["status"] == "done"
+    assert app.state.yt.playlists[transfer["yt_playlist_id"]] == ["v1"]
+    assert "Waiting for your confirmation" not in client.get("/").text

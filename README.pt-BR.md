@@ -167,7 +167,10 @@ Os cabeçalhos valem enquanto durar a sessão do navegador. Se você sair da con
 
 ### 3. Transferir
 
-Abra **Playlists**, marque as que quiser, escolha a privacidade das novas playlists (privada por padrão) e clique em **Transfer**. Sem login no Spotify, use **Import**.
+1. Escolha as playlists: no **Import** (arquivo do Exportify ou links) ou, com login no Spotify, em **Playlists**. Clique em **Find songs**.
+2. O spot2ytm busca no YouTube Music e para. Nada é criado ainda.
+3. Confira o resultado: abra uma playlist para ver cada música ao lado do que foi encontrado e resolva as incertas.
+4. Confirme: na página da playlist ou, para várias de uma vez, no quadro **Waiting for your confirmation** do Dashboard. Escolha a privacidade (privada por padrão) e clique em **Create**.
 
 ## Como a correspondência funciona
 
@@ -240,7 +243,7 @@ Cerca de 1 segundo por música na primeira vez. As que já estão no cache são 
 <details>
 <summary><b>A ordem das músicas é mantida?</b></summary>
 
-Sim, para tudo que é adicionado de uma vez. Se a opção *Create the playlist as soon as matching finishes* estiver ligada, as músicas que você corrigir depois na revisão vão para o fim. Desligue a opção para revisar antes e manter a ordem exata.
+Sim. O spot2ytm sempre mostra a revisão antes de criar a playlist, então tudo o que você aceitou entra de uma vez, na ordem do Spotify. Músicas corrigidas depois que a playlist já foi criada vão para o fim.
 </details>
 
 <details>

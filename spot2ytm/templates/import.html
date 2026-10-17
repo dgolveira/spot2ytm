@@ -2,56 +2,57 @@
 {% block title %}Import · spot2ytm{% endblock %}
 {% block content %}
 <section class="narrow">
-  <h1>Import without logging in to Spotify</h1>
-  {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+  <h1>Import from Spotify</h1>
+  <p class="muted">No Spotify login needed, works on Spotify Free. spot2ytm first finds the songs on YouTube Music
+    and shows you the result; nothing is created there until you confirm.</p>
+
   {% if not yt_connected %}
-  <div class="alert info">YouTube Music is not connected yet. <a href="/setup/ytmusic">Connect it</a> first, then come back here.</div>
+  <div class="alert info">YouTube Music is not connected yet. <a href="/setup/ytmusic">Connect it</a> before importing.</div>
   {% endif %}
-  <p class="muted">Works with Spotify Free: no developer app is needed.</p>
+  {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
 
-  <h2>From Exportify (recommended)</h2>
-  <p>Every playlist and your Liked Songs, complete. <a href="https://exportify.app" target="_blank" rel="noopener">Exportify</a>
-    is an open-source site approved by Spotify that saves your playlists as CSV files.</p>
-  <ol class="steps">
-    <li>Open <a href="https://exportify.app" target="_blank" rel="noopener">exportify.app</a> and log in with Spotify.</li>
-    <li>Click <strong>Export</strong> next to a playlist (or <em>Liked Songs</em>), or <strong>Export All</strong> to get a .zip with all of them.</li>
-    <li>Upload the files here. You pick which playlists to transfer on the next screen.</li>
-  </ol>
-  <form method="post" action="/import/exportify" enctype="multipart/form-data" class="inline-form">
-    <input type="file" name="files" accept=".csv,.zip" multiple required aria-label="Exportify files">
-    <button class="btn primary">Upload</button>
-  </form>
+  <div class="tabs source-tabs" role="tablist" data-tabs>
+    <button type="button" role="tab" data-tab="exportify" aria-selected="{{ 'true' if tab == 'exportify' else 'false' }}">Exportify file <span class="tag ok">recommended</span></button>
+    <button type="button" role="tab" data-tab="link" aria-selected="{{ 'true' if tab == 'link' else 'false' }}">Playlist link</button>
+    <button type="button" role="tab" data-tab="songs" aria-selected="{{ 'true' if tab == 'songs' else 'false' }}">Song links</button>
+  </div>
 
-  <h2>From links</h2>
-  <ol class="steps">
-    <li><strong>Public playlist or album:</strong> paste its link (<em>Share → Copy link</em>).
-      Spotify's public page only lists the first {{ EMBED_TRACK_LIMIT }} songs.</li>
-    <li><strong>Liked Songs, private or longer playlists:</strong> open them in the Spotify app on your computer,
-      click a song, press <kbd>Ctrl</kbd>+<kbd>A</kbd> (<kbd>Cmd</kbd>+<kbd>A</kbd> on a Mac) and then
-      <kbd>Ctrl</kbd>+<kbd>C</kbd>, and paste here. You get one link per song, with no limit.</li>
-  </ol>
+  <div class="panel" role="tabpanel" data-panel="exportify" {% if tab != 'exportify' %}hidden{% endif %}>
+    <p>All your playlists and Liked Songs, with no song limit.</p>
+    <ol class="steps">
+      <li>Open <a href="https://exportify.app" target="_blank" rel="noopener">exportify.app</a> and log in with Spotify.</li>
+      <li>Click <strong>Export All</strong> (one .zip) or <strong>Export</strong> next to a playlist.</li>
+      <li>Upload the file here, then pick the playlists.</li>
+    </ol>
+    <form method="post" action="/import/exportify" enctype="multipart/form-data" class="upload-form">
+      <input type="file" name="files" accept=".csv,.zip" multiple required aria-label="Exportify .zip or .csv files">
+      <button class="btn primary">Upload</button>
+    </form>
+    <p class="muted small"><a href="https://github.com/watsonbox/exportify" target="_blank" rel="noopener">Exportify</a>
+      is an open-source site approved by Spotify. It runs in your browser and saves your playlists as CSV files.</p>
+  </div>
 
-  <form method="post" action="/import" class="stack">
-    <label for="source">Playlist link, or song links</label>
-    <textarea id="source" name="source" rows="10" required spellcheck="false"
-              placeholder="https://open.spotify.com/playlist/…&#10;&#10;or&#10;&#10;https://open.spotify.com/track/…&#10;https://open.spotify.com/track/…">{{ values.source or '' }}</textarea>
+  <div class="panel" role="tabpanel" data-panel="link" {% if tab != 'link' %}hidden{% endif %}>
+    <p>A public playlist or album. In Spotify: <em>Share → Copy link</em>.</p>
+    <form method="post" action="/import/link" class="upload-form">
+      <input name="link" required value="{{ values.link or '' }}" placeholder="https://open.spotify.com/playlist/…" aria-label="Playlist link">
+      <button class="btn primary">Find songs</button>
+    </form>
+    <p class="muted small">Spotify's public page only lists the first {{ EMBED_TRACK_LIMIT }} songs. For longer playlists use an Exportify file.</p>
+  </div>
 
-    <label for="name">Name on YouTube Music <span class="muted small">(optional for a playlist link)</span></label>
-    <input id="name" name="name" maxlength="150" value="{{ values.name or '' }}" placeholder="Liked Songs">
+  <div class="panel" role="tabpanel" data-panel="songs" {% if tab != 'songs' %}hidden{% endif %}>
+    <p>In the Spotify app on your computer, open a playlist (or Liked Songs), click a song, press
+      <kbd>Ctrl</kbd>+<kbd>A</kbd> and <kbd>Ctrl</kbd>+<kbd>C</kbd> (<kbd>Cmd</kbd> on a Mac), and paste here.</p>
+    <form method="post" action="/import/songs" class="stack tight">
+      <textarea name="songs" rows="8" required spellcheck="false" aria-label="Song links"
+                placeholder="https://open.spotify.com/track/…&#10;https://open.spotify.com/track/…">{{ values.songs or '' }}</textarea>
+      <label for="name">Playlist name</label>
+      <input id="name" name="name" maxlength="150" required value="{{ values.name or '' }}" placeholder="Liked Songs">
+      <button class="btn primary">Find songs</button>
+    </form>
+  </div>
 
-    <label for="privacy">Privacy on YouTube Music</label>
-    <select id="privacy" name="privacy">
-      {% for opt in privacy_options %}<option value="{{ opt }}" {% if values.privacy == opt %}selected{% endif %}>{{ opt | capitalize }}</option>{% endfor %}
-    </select>
-
-    <label class="checkbox">
-      <input type="checkbox" name="auto_push" value="1" {% if values.auto_push %}checked{% endif %}>
-      Create the playlist as soon as matching finishes
-      <span class="muted small">Uncheck to review the songs first.</span>
-    </label>
-
-    <button class="btn primary">Import</button>
-  </form>
-  <p class="muted small">Importing the same playlist again, or a song list with the same name, only adds the new songs to the same YouTube Music playlist.</p>
+  <p class="muted small">Importing a playlist again (same link or same name) only adds the new songs to the playlist it created before.</p>
 </section>
 {% endblock %}

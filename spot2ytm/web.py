@@ -95,6 +95,7 @@ def create_app(
     templates.env.globals["version"] = __version__
     templates.env.globals["MATCH_THRESHOLD"] = matching.MATCH_THRESHOLD
     templates.env.globals["EMBED_TRACK_LIMIT"] = EMBED_TRACK_LIMIT
+    templates.env.globals["privacy_options"] = PRIVACY_OPTIONS
 
     def render(request: Request, name: str, status_code: int = 200, headers: dict | None = None, **ctx):
         ctx.setdefault("spotify_connected", app.state.spotify.connected)
@@ -117,6 +118,10 @@ def create_app(
         rows = store.list_transfers()
         return [(t, store.count_tracks(t["id"])) for t in rows]
 
+    def awaiting(summaries):
+        """Transfers that finished searching and wait for the user to confirm."""
+        return [(t, c) for t, c in summaries if t["status"] == "review" and c["to_add"]]
+
     # -- dashboard ------------------------------------------------------------
 
     @app.get("/", response_class=HTMLResponse)
@@ -134,14 +139,19 @@ def create_app(
             spotify_error=spotify_error,
             yt_account=app.state.yt.account(),
             client_id_set=bool(settings.spotify_client_id),
-            transfers=transfer_summaries(),
+            transfers=(summaries := transfer_summaries()),
+            awaiting=awaiting(summaries),
             active_statuses=ACTIVE_STATUSES,
         )
 
     @app.get("/partials/transfers", response_class=HTMLResponse)
-    def transfers_partial(request: Request):
-        return render(request, "partials/transfer_list.html", transfers=transfer_summaries(),
-                      active_statuses=ACTIVE_STATUSES)
+    def transfers_partial(request: Request, awaiting_count: int = -1):
+        summaries = transfer_summaries()
+        headers = {}
+        if awaiting_count >= 0 and len(awaiting(summaries)) != awaiting_count:
+            headers["HX-Refresh"] = "true"  # a search finished: show it in the confirmation box
+        return render(request, "partials/transfer_list.html", headers=headers, transfers=summaries,
+                      awaiting=awaiting(summaries), active_statuses=ACTIVE_STATUSES)
 
     # -- Spotify --------------------------------------------------------------
 
@@ -223,6 +233,9 @@ def create_app(
 
     # -- playlists ------------------------------------------------------------
 
+    # Every transfer stops after searching YouTube Music: nothing is written
+    # there until the user has reviewed the matches and confirmed.
+
     @app.get("/playlists", response_class=HTMLResponse)
     def playlists(request: Request):
         if not app.state.spotify.connected:
@@ -233,21 +246,17 @@ def create_app(
             return RedirectResponse("/setup/spotify?error=Please+connect+Spotify+again", 303)
         except SpotifyError as exc:
             return render(request, "error.html", status_code=502, message=f"Spotify error: {exc}")
-        return render(
-            request, "playlists.html",
-            playlists=items,
-            last=store.last_transfer_by_playlist(),
-            privacy_options=PRIVACY_OPTIONS,
-        )
+        return render(request, "playlists.html", playlists=items, last=store.last_transfer_by_playlist())
+
+    def after_create(created: list[int]):
+        if len(created) == 1:
+            return RedirectResponse(f"/transfers/{created[0]}", 303)
+        return RedirectResponse("/", 303)
 
     @app.post("/transfers")
     async def create_transfers(request: Request):
         form = await request.form()
         ids = [str(v) for v in form.getlist("playlist_id")]
-        privacy = str(form.get("privacy") or "PRIVATE")
-        if privacy not in PRIVACY_OPTIONS:
-            privacy = "PRIVATE"
-        auto_push = form.get("auto_push") == "1"
         if not ids:
             return RedirectResponse("/playlists", 303)
         if not app.state.yt.connected:
@@ -259,79 +268,71 @@ def create_app(
             except SpotifyError as exc:
                 log.warning("skipping playlist %s: %s", playlist_id, exc)
                 continue
-            transfer_id = new_transfer(store, playlist, privacy, auto_push)
+            transfer_id = new_transfer(store, playlist)
             worker.enqueue(transfer_id)
             created.append(transfer_id)
-        if len(created) == 1:
-            return RedirectResponse(f"/transfers/{created[0]}", 303)
-        return RedirectResponse("/", 303)
+        return after_create(created)
 
     # -- import without a Spotify login ----------------------------------------
 
-    def import_form(request: Request, status_code: int = 200, error: str | None = None, **values):
+    IMPORT_TABS = ("exportify", "link", "songs")
+
+    def import_form(request: Request, tab: str = "exportify", status_code: int = 200, error: str | None = None,
+                    **values):
         return render(request, "import.html", status_code=status_code, error=error,
-                      privacy_options=PRIVACY_OPTIONS, values=values)
+                      tab=tab if tab in IMPORT_TABS else "exportify", values=values)
 
     @app.get("/import", response_class=HTMLResponse)
-    def import_page(request: Request):
-        return import_form(request, auto_push=True)
+    def import_page(request: Request, tab: str = "exportify"):
+        return import_form(request, tab)
 
-    @app.post("/import", response_class=HTMLResponse)
-    def import_submit(
-        request: Request, source: str = Form(""), name: str = Form(""),
-        privacy: str = Form("PRIVATE"), auto_push: str = Form(""),
-    ):
-        values = {"source": source, "name": name, "privacy": privacy, "auto_push": auto_push == "1"}
-        if privacy not in PRIVACY_OPTIONS:
-            privacy = "PRIVATE"
-        if not app.state.yt.connected:
-            return import_form(request, 400, "Connect YouTube Music first.", **values)
-        ids = track_ids(source)
-        link = parse_link(source)
-        name = name.strip()[:150]
-        if ids:
-            title = name or "Imported from Spotify"
-            stubs = [Track(title="", artists=[], spotify_id=i) for i in ids]
-            return RedirectResponse(f"/transfers/{create_named_transfer(title, stubs, privacy, values['auto_push'])}", 303)
-        elif link and link[0] in ("playlist", "album"):
-            try:
-                playlist, tracks = public.collection(*link)
-            except PublicSpotifyError as exc:
-                return import_form(request, 400, str(exc), **values)
-            if not tracks:
-                return import_form(request, 400, "That playlist has no songs that can be read.", **values)
-            if name:
-                playlist.name = name
-            transfer_id = new_transfer(store, playlist, privacy, values["auto_push"])
-            store.add_tracks(transfer_id, tracks)
-        else:
-            return import_form(request, 400, "Paste a Spotify playlist or album link, or a list of song links.",
-                               **values)
-        worker.enqueue(transfer_id)
-        return RedirectResponse(f"/transfers/{transfer_id}", 303)
-
-    def create_named_transfer(name: str, tracks: list[Track], privacy: str, auto_push: bool) -> int:
+    def create_named_transfer(name: str, tracks: list[Track]) -> int:
         # Same name, same YouTube Music playlist: importing again only adds new songs.
         key = store.key_for_name(name) or "named:" + " ".join(name.lower().split())
-        transfer_id = store.create_transfer(key, name, "", None, privacy, auto_push)
+        transfer_id = store.create_transfer(key, name, "", None, "PRIVATE", False)
         store.add_tracks(transfer_id, tracks)
         worker.enqueue(transfer_id)
         return transfer_id
 
+    @app.post("/import/link", response_class=HTMLResponse)
+    def import_link(request: Request, link: str = Form("")):
+        found = parse_link(link)
+        if not found or found[0] not in ("playlist", "album"):
+            return import_form(request, "link", 400, "That is not a Spotify playlist or album link.", link=link)
+        try:
+            playlist, tracks = public.collection(*found)
+        except PublicSpotifyError as exc:
+            return import_form(request, "link", 400, str(exc), link=link)
+        if not tracks:
+            return import_form(request, "link", 400, "That playlist has no songs that can be read.", link=link)
+        transfer_id = new_transfer(store, playlist)
+        store.add_tracks(transfer_id, tracks)
+        worker.enqueue(transfer_id)
+        return after_create([transfer_id])
+
+    @app.post("/import/songs", response_class=HTMLResponse)
+    def import_songs(request: Request, songs: str = Form(""), name: str = Form("")):
+        ids = track_ids(songs)
+        name = name.strip()[:150]
+        if not ids:
+            return import_form(request, "songs", 400, "No Spotify song links found in what you pasted.",
+                               songs=songs, name=name)
+        if not name:
+            return import_form(request, "songs", 400, "Give the playlist a name.", songs=songs, name=name)
+        stubs = [Track(title="", artists=[], spotify_id=i) for i in ids]
+        return after_create([create_named_transfer(name, stubs)])
+
     @app.post("/import/exportify", response_class=HTMLResponse)
     async def import_exportify(request: Request, files: list[UploadFile] = File(...)):
-        if not app.state.yt.connected:
-            return import_form(request, 400, "Connect YouTube Music first.", auto_push=True)
         try:
             playlists = parse_files([(f.filename or "playlist.csv", await f.read()) for f in files])
         except ExportifyError as exc:
-            return import_form(request, 400, str(exc), auto_push=True)
+            return import_form(request, "exportify", 400, str(exc))
         if not playlists:
-            return import_form(request, 400, "No songs found in those files.", auto_push=True)
+            return import_form(request, "exportify", 400, "No songs found in those files.")
         token = secrets.token_urlsafe(16)
         app.state.uploads = {token: playlists}  # only the latest upload is kept
-        return render(request, "import_exportify.html", token=token, playlists=playlists,
-                      privacy_options=PRIVACY_OPTIONS)
+        return render(request, "import_exportify.html", token=token, playlists=playlists)
 
     @app.post("/import/exportify/confirm")
     async def import_exportify_confirm(request: Request):
@@ -339,10 +340,6 @@ def create_app(
         playlists: list[ExportedPlaylist] | None = app.state.uploads.pop(str(form.get("token")), None)
         if playlists is None:
             return RedirectResponse("/import", 303)
-        privacy = str(form.get("privacy") or "PRIVATE")
-        if privacy not in PRIVACY_OPTIONS:
-            privacy = "PRIVATE"
-        auto_push = form.get("auto_push") == "1"
         created = []
         for value in form.getlist("playlist_id"):
             try:
@@ -350,9 +347,28 @@ def create_app(
             except (ValueError, IndexError):
                 continue
             name = str(form.get(f"name_{value}") or "").strip()[:150] or playlist.name
-            created.append(create_named_transfer(name, playlist.tracks, privacy, auto_push))
-        if len(created) == 1:
-            return RedirectResponse(f"/transfers/{created[0]}", 303)
+            created.append(create_named_transfer(name, playlist.tracks))
+        return after_create(created)
+
+    # -- confirming -----------------------------------------------------------
+
+    def confirm_push(transfer_id: int, privacy: str) -> None:
+        transfer = store.get_transfer(transfer_id)
+        if transfer is None or transfer["status"] in ACTIVE_STATUSES:
+            return
+        if privacy in PRIVACY_OPTIONS and not transfer["yt_playlist_id"]:
+            store.update_transfer(transfer_id, privacy=privacy)
+        worker.request(transfer_id, "push")
+
+    @app.post("/transfers/push-many")
+    async def push_many(request: Request):
+        form = await request.form()
+        if not app.state.yt.connected:
+            return RedirectResponse("/setup/ytmusic", 303)
+        privacy = str(form.get("privacy") or "")
+        for value in form.getlist("playlist_id"):
+            if str(value).isdigit():
+                confirm_push(int(str(value)), privacy)
         return RedirectResponse("/", 303)
 
     # -- transfers ------------------------------------------------------------
@@ -390,11 +406,11 @@ def create_app(
         return RedirectResponse(f"/transfers/{transfer_id}", 303)
 
     @app.post("/transfers/{transfer_id}/push")
-    def push(transfer_id: int):
+    def push(transfer_id: int, privacy: str = Form("")):
         transfer_or_404(transfer_id)
         if not app.state.yt.connected:
             return RedirectResponse("/setup/ytmusic", 303)
-        worker.request(transfer_id, "push")
+        confirm_push(transfer_id, privacy)
         return back_to(transfer_id)
 
     @app.post("/transfers/{transfer_id}/retry")

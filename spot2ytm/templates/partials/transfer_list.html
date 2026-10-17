@@ -1,6 +1,6 @@
 {% set any_active = transfers | selectattr('0.status', 'in', active_statuses) | list %}
 <div id="transfer-list"
-     {% if any_active %}hx-get="/partials/transfers" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+     {% if any_active %}hx-get="/partials/transfers?awaiting_count={{ awaiting | length }}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
   {% if not transfers %}
     <p class="empty">Nothing transferred yet.</p>
   {% else %}

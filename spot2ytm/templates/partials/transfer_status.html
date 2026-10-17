@@ -32,16 +32,35 @@
   </dl>
   {% endif %}
 
+  {% if transfer.status == 'review' and counts.to_add %}
+  <form method="post" action="/transfers/{{ transfer.id }}/push" class="confirm-panel">
+    <div class="grow">
+      <strong>
+        {% if transfer.yt_playlist_id %}{{ counts.to_add }} new song{{ 's' if counts.to_add != 1 }} will be added to the playlist created before.
+        {% else %}Ready: {{ counts.to_add }} of {{ transfer.total }} songs will go to a new playlist.{% endif %}
+      </strong>
+      <div class="muted small">
+        Check the list below first.
+        {% if counts.uncertain + counts.not_found %}<span class="warn-text">{{ counts.uncertain + counts.not_found }} song{{ 's' if counts.uncertain + counts.not_found != 1 }} need{{ 's' if counts.uncertain + counts.not_found == 1 }} your attention</span>
+        and will be left out unless you pick a version.{% endif %}
+      </div>
+    </div>
+    {% if not transfer.yt_playlist_id %}
+    <select name="privacy" aria-label="Privacy on YouTube Music">
+      {% for opt in privacy_options %}<option value="{{ opt }}" {% if opt == transfer.privacy %}selected{% endif %}>{{ opt | capitalize }}</option>{% endfor %}
+    </select>
+    {% endif %}
+    <button class="btn primary">{% if transfer.yt_playlist_id %}Add to YouTube Music{% else %}Create playlist on YouTube Music{% endif %}</button>
+  </form>
+  {% endif %}
+
   <div class="button-row">
     {% if active %}
       <form method="post" action="/transfers/{{ transfer.id }}/cancel"><button class="btn ghost">Stop</button></form>
     {% else %}
-      {% if counts.to_add %}
+      {% if counts.to_add and transfer.status != 'review' %}
       <form method="post" action="/transfers/{{ transfer.id }}/push">
-        <button class="btn primary">
-          {% if transfer.yt_playlist_id %}Add {{ counts.to_add }} song{{ 's' if counts.to_add != 1 }} to YouTube Music
-          {% else %}Create playlist on YouTube Music ({{ counts.to_add }} songs){% endif %}
-        </button>
+        <button class="btn primary">Add {{ counts.to_add }} song{{ 's' if counts.to_add != 1 }} to YouTube Music</button>
       </form>
       {% endif %}
       {% if transfer.status in ('error', 'cancelled') %}

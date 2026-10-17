@@ -2,7 +2,7 @@
 {% block content %}
 <section class="hero">
   <h1>Move your Spotify playlists to YouTube Music</h1>
-  <p class="muted">Connect both accounts, pick playlists, review the songs that could not be matched with confidence, done.</p>
+  <p class="muted">Bring your playlists over, check the songs that were found, then confirm. Nothing is created on YouTube Music before you do.</p>
 </section>
 
 <section class="cards">
@@ -26,7 +26,7 @@
       <a class="btn" href="/setup/spotify">Set up Spotify</a>
     {% endif %}
     {% if not spotify_user %}
-      <p class="muted small">On Spotify Free? Skip this step and <a href="/import">import with links</a> instead.</p>
+      <p class="muted small">On Spotify Free? Skip this step and <a href="/import">import</a> from an Exportify file or a link instead.</p>
     {% endif %}
   </article>
 
@@ -49,17 +49,64 @@
       <span class="logo go" aria-hidden="true"></span>
       <h2>3 · Transfer</h2>
     </div>
-    <p class="muted">Choose which playlists to copy. Your Liked Songs can be copied too.</p>
+    <p class="muted">Choose the playlists, including your Liked Songs. You review the songs before anything is created.</p>
     {% if spotify_user and yt_account %}
       <a class="btn primary" href="/playlists">Choose playlists</a>
-      <a class="link small" href="/import">or import with links</a>
+      <a class="link small" href="/import">or import a file or link</a>
     {% elif yt_account %}
-      <a class="btn primary" href="/import">Import with links</a>
+      <a class="btn primary" href="/import">Import playlists</a>
     {% else %}
       <span class="btn disabled" aria-disabled="true">Connect YouTube Music first</span>
     {% endif %}
   </article>
 </section>
+
+{% if awaiting %}
+<section class="confirm-box">
+  <form method="post" action="/transfers/push-many" id="playlist-form">
+    <div class="confirm-head">
+      <div class="grow">
+        <h2>Waiting for your confirmation</h2>
+        <p class="muted small">These playlists were searched on YouTube Music. Open one to check the songs, then create the ones you want.</p>
+      </div>
+    </div>
+    <table class="playlists">
+      <thead>
+        <tr>
+          <th class="check"><input type="checkbox" id="select-all" aria-label="Select all" checked></th>
+          <th>Playlist</th>
+          <th class="num">Will be added</th>
+          <th class="num">To check</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t, c in awaiting %}
+        <tr data-name="{{ t.name | lower }}">
+          <td class="check"><input type="checkbox" name="playlist_id" value="{{ t.id }}" id="aw-{{ t.id }}" checked></td>
+          <td>
+            <label for="aw-{{ t.id }}" class="title">{{ t.name }}</label>
+            {% if t.yt_playlist_id %}<div class="muted small">adds to the playlist created before</div>{% endif %}
+          </td>
+          <td class="num">{{ c.to_add }}</td>
+          <td class="num">{% if c.uncertain + c.not_found %}<span class="warn-text">{{ c.uncertain + c.not_found }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+          <td class="actions"><a class="btn small" href="/transfers/{{ t.id }}">Review</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="action-bar">
+      <label class="inline-label">New playlists will be
+        <select name="privacy">
+          {% for opt in privacy_options %}<option value="{{ opt }}">{{ opt | capitalize }}</option>{% endfor %}
+        </select>
+      </label>
+      <p class="muted small grow">Songs still "to check" are left out until you accept them.</p>
+      <button class="btn primary" id="transfer-btn"><span>Create <span id="selected-count">{{ awaiting | length }}</span> <span id="selected-noun">playlists</span> on YouTube Music</span></button>
+    </div>
+  </form>
+</section>
+{% endif %}
 
 <section>
   <h2 class="section-title">Transfers</h2>

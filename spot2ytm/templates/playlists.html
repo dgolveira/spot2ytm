@@ -60,19 +60,8 @@
   </table>
 
   <div class="action-bar">
-    <div class="options">
-      <label>Privacy on YouTube Music
-        <select name="privacy">
-          {% for opt in privacy_options %}<option value="{{ opt }}">{{ opt | capitalize }}</option>{% endfor %}
-        </select>
-      </label>
-      <label class="checkbox">
-        <input type="checkbox" name="auto_push" value="1" checked>
-        Create the playlist as soon as matching finishes
-        <span class="muted small">Songs you fix during review are then added at the end. Uncheck to review first and keep the original order.</span>
-      </label>
-    </div>
-    <button class="btn primary" id="transfer-btn" disabled>Transfer <span id="selected-count">0</span> playlists</button>
+    <p class="muted small grow">spot2ytm searches YouTube Music and shows you what it found. You confirm before anything is created.</p>
+    <button class="btn primary" id="transfer-btn" disabled><span>Find songs for <span id="selected-count">0</span> <span id="selected-noun">playlists</span></span></button>
   </div>
 </form>
 {% endblock %}

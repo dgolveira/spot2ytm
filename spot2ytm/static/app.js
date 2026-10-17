@@ -31,7 +31,8 @@ document.addEventListener("click", (event) => {
     const n = boxes().filter((b) => b.checked).length;
     count.textContent = n;
     button.disabled = n === 0;
-    button.lastChild.textContent = n === 1 ? " playlist" : " playlists";
+    const noun = document.getElementById("selected-noun");
+    if (noun) noun.textContent = n === 1 ? "playlist" : "playlists";
     const visible = visibleBoxes();
     selectAll.checked = visible.length > 0 && visible.every((b) => b.checked);
   }
@@ -43,7 +44,7 @@ document.addEventListener("click", (event) => {
   form.addEventListener("change", (e) => {
     if (e.target.name === "playlist_id") refresh();
   });
-  document.getElementById("playlist-filter").addEventListener("input", (e) => {
+  document.getElementById("playlist-filter")?.addEventListener("input", (e) => {
     const q = e.target.value.trim().toLowerCase();
     form.querySelectorAll("tbody tr").forEach((tr) => {
       tr.classList.toggle("hidden", q !== "" && !tr.dataset.name.includes(q));
@@ -52,7 +53,7 @@ document.addEventListener("click", (event) => {
   });
   form.addEventListener("submit", () => {
     button.disabled = true;
-    button.textContent = "Starting…";
+    button.textContent = "Working…";
   });
   refresh();
 })();
@@ -63,3 +64,14 @@ document.addEventListener("toggle", (event) => {
     document.querySelectorAll("details.picker[open]").forEach((d) => d !== event.target && (d.open = false));
   }
 }, true);
+
+// Tabs on the import page.
+document.querySelectorAll("[data-tabs]").forEach((tabs) => {
+  tabs.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-tab]");
+    if (!tab) return;
+    tabs.querySelectorAll("[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t === tab)));
+    document.querySelectorAll("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== tab.dataset.tab));
+    history.replaceState(null, "", "?tab=" + tab.dataset.tab);
+  });
+});

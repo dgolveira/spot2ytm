@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Nothing is written to YouTube Music before you confirm: every transfer stops after the search,
+  shows what was found and waits. The dashboard lists the playlists waiting for confirmation, to
+  create several at once, and privacy is chosen at that step.
+- Import page reorganized in tabs: Exportify file, playlist link, song links.
+
 ### Added
 
 - Import without a Spotify login, for Spotify Free accounts: paste a public playlist or album link

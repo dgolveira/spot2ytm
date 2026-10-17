@@ -7,8 +7,8 @@
     <h1>Playlists in your files</h1>
     <input type="search" id="playlist-filter" placeholder="Filter…" aria-label="Filter playlists">
   </div>
-  <p class="muted">Exportify writes names in lowercase with <code>_</code> for spaces: fix them here if you like.
-    Importing again with the same name only adds the new songs to the same YouTube Music playlist.</p>
+  <p class="muted">Tick the playlists to bring over. Exportify writes names in lowercase with <code>_</code>: fix them here if you like.
+    A name you already imported adds only the new songs to that playlist.</p>
 
   <table class="playlists">
     <thead>
@@ -22,7 +22,7 @@
       {% for p in playlists %}
       <tr data-name="{{ p.name | lower }}">
         <td class="check"><input type="checkbox" name="playlist_id" value="{{ loop.index0 }}" id="pl-{{ loop.index0 }}" aria-label="Select {{ p.name }}"></td>
-        <td><input name="name_{{ loop.index0 }}" value="{{ p.name }}" maxlength="150" aria-label="Name"></td>
+        <td><input class="name-input" name="name_{{ loop.index0 }}" value="{{ p.name }}" maxlength="150" aria-label="Name of {{ p.name }} on YouTube Music" title="Click to rename"></td>
         <td class="num">{{ p.tracks | length }}</td>
       </tr>
       {% endfor %}
@@ -30,19 +30,8 @@
   </table>
 
   <div class="action-bar">
-    <div class="options">
-      <label>Privacy on YouTube Music
-        <select name="privacy">
-          {% for opt in privacy_options %}<option value="{{ opt }}">{{ opt | capitalize }}</option>{% endfor %}
-        </select>
-      </label>
-      <label class="checkbox">
-        <input type="checkbox" name="auto_push" value="1" checked>
-        Create the playlist as soon as matching finishes
-        <span class="muted small">Uncheck to review the songs first.</span>
-      </label>
-    </div>
-    <button class="btn primary" id="transfer-btn" disabled>Transfer <span id="selected-count">0</span> playlists</button>
+    <p class="muted small grow">spot2ytm searches YouTube Music and shows you what it found. You confirm before anything is created.</p>
+    <button class="btn primary" id="transfer-btn" disabled><span>Find songs for <span id="selected-count">0</span> <span id="selected-noun">playlists</span></span></button>
   </div>
 </form>
 {% endblock %}
