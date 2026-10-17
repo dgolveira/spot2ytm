@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Import · spot2ytm{% endblock %}
+{% block content %}
+<form method="post" action="/import/exportify/confirm" id="playlist-form">
+  <input type="hidden" name="token" value="{{ token }}">
+  <div class="toolbar">
+    <h1>Playlists in your files</h1>
+    <input type="search" id="playlist-filter" placeholder="Filter…" aria-label="Filter playlists">
+  </div>
+  <p class="muted">Exportify writes names in lowercase with <code>_</code> for spaces: fix them here if you like.
+    Importing again with the same name only adds the new songs to the same YouTube Music playlist.</p>
+
+  <table class="playlists">
+    <thead>
+      <tr>
+        <th class="check"><input type="checkbox" id="select-all" aria-label="Select all"></th>
+        <th>Name on YouTube Music</th>
+        <th class="num">Songs</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in playlists %}
+      <tr data-name="{{ p.name | lower }}">
+        <td class="check"><input type="checkbox" name="playlist_id" value="{{ loop.index0 }}" id="pl-{{ loop.index0 }}" aria-label="Select {{ p.name }}"></td>
+        <td><input name="name_{{ loop.index0 }}" value="{{ p.name }}" maxlength="150" aria-label="Name"></td>
+        <td class="num">{{ p.tracks | length }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="action-bar">
+    <div class="options">
+      <label>Privacy on YouTube Music
+        <select name="privacy">
+          {% for opt in privacy_options %}<option value="{{ opt }}">{{ opt | capitalize }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" name="auto_push" value="1" checked>
+        Create the playlist as soon as matching finishes
+        <span class="muted small">Uncheck to review the songs first.</span>
+      </label>
+    </div>
+    <button class="btn primary" id="transfer-btn" disabled>Transfer <span id="selected-count">0</span> playlists</button>
+  </div>
+</form>
+{% endblock %}

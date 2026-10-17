@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -20,6 +20,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from . import __version__, matching
 from .config import Settings
 from .db import ACTIVE_STATUSES, Store, row_candidates, row_track
+from .exportify import ExportedPlaylist, ExportifyError, parse_files
 from .jobs import Worker, new_transfer
 from .models import Candidate, Track
 from .public import EMBED_TRACK_LIMIT, PublicSpotify, PublicSpotifyError, parse_link, track_ids
@@ -73,6 +74,7 @@ def create_app(
     app.state.yt = yt
     app.state.worker = worker
     app.state.oauth_pending = {}  # state -> PKCE verifier
+    app.state.uploads = {}  # token -> playlists read from Exportify files, waiting for confirmation
 
     # The app holds your credentials and listens on localhost: refuse requests
     # whose Host is not ours (DNS rebinding) and cross-site form posts (CSRF).
@@ -289,10 +291,8 @@ def create_app(
         name = name.strip()[:150]
         if ids:
             title = name or "Imported from Spotify"
-            # Same name, same YouTube Music playlist: importing again only adds new songs.
-            key = store.key_for_name(title) or "paste:" + " ".join(title.lower().split())
-            transfer_id = store.create_transfer(key, title, "", None, privacy, values["auto_push"])
-            store.add_tracks(transfer_id, [Track(title="", artists=[], spotify_id=i) for i in ids])
+            stubs = [Track(title="", artists=[], spotify_id=i) for i in ids]
+            return RedirectResponse(f"/transfers/{create_named_transfer(title, stubs, privacy, values['auto_push'])}", 303)
         elif link and link[0] in ("playlist", "album"):
             try:
                 playlist, tracks = public.collection(*link)
@@ -309,6 +309,51 @@ def create_app(
                                **values)
         worker.enqueue(transfer_id)
         return RedirectResponse(f"/transfers/{transfer_id}", 303)
+
+    def create_named_transfer(name: str, tracks: list[Track], privacy: str, auto_push: bool) -> int:
+        # Same name, same YouTube Music playlist: importing again only adds new songs.
+        key = store.key_for_name(name) or "named:" + " ".join(name.lower().split())
+        transfer_id = store.create_transfer(key, name, "", None, privacy, auto_push)
+        store.add_tracks(transfer_id, tracks)
+        worker.enqueue(transfer_id)
+        return transfer_id
+
+    @app.post("/import/exportify", response_class=HTMLResponse)
+    async def import_exportify(request: Request, files: list[UploadFile] = File(...)):
+        if not app.state.yt.connected:
+            return import_form(request, 400, "Connect YouTube Music first.", auto_push=True)
+        try:
+            playlists = parse_files([(f.filename or "playlist.csv", await f.read()) for f in files])
+        except ExportifyError as exc:
+            return import_form(request, 400, str(exc), auto_push=True)
+        if not playlists:
+            return import_form(request, 400, "No songs found in those files.", auto_push=True)
+        token = secrets.token_urlsafe(16)
+        app.state.uploads = {token: playlists}  # only the latest upload is kept
+        return render(request, "import_exportify.html", token=token, playlists=playlists,
+                      privacy_options=PRIVACY_OPTIONS)
+
+    @app.post("/import/exportify/confirm")
+    async def import_exportify_confirm(request: Request):
+        form = await request.form()
+        playlists: list[ExportedPlaylist] | None = app.state.uploads.pop(str(form.get("token")), None)
+        if playlists is None:
+            return RedirectResponse("/import", 303)
+        privacy = str(form.get("privacy") or "PRIVATE")
+        if privacy not in PRIVACY_OPTIONS:
+            privacy = "PRIVATE"
+        auto_push = form.get("auto_push") == "1"
+        created = []
+        for value in form.getlist("playlist_id"):
+            try:
+                playlist = playlists[int(str(value))]
+            except (ValueError, IndexError):
+                continue
+            name = str(form.get(f"name_{value}") or "").strip()[:150] or playlist.name
+            created.append(create_named_transfer(name, playlist.tracks, privacy, auto_push))
+        if len(created) == 1:
+            return RedirectResponse(f"/transfers/{created[0]}", 303)
+        return RedirectResponse("/", 303)
 
     # -- transfers ------------------------------------------------------------
 

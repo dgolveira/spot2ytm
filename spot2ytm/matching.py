@@ -172,7 +172,12 @@ def search_queries(track: Track) -> list[tuple[str, str]]:
     title = re.sub(r"\s+-\s+.*remaster.*$", "", title, flags=re.IGNORECASE).strip()
     primary = track.artists[0] if track.artists else ""
     everyone = " ".join(track.artists[:3])
-    queries = [(f"{primary} {title}".strip(), "songs")]
+    queries = []
+    if track.isrc:
+        # YouTube Music indexes the ISRC of official songs: the first result is
+        # then the exact recording (the rest are unrelated).
+        queries.append((track.isrc, "songs"))
+    queries.append((f"{primary} {title}".strip(), "songs"))
     if len(track.artists) > 1:
         queries.append((f"{title} {everyone}".strip(), "songs"))
     queries.append((f"{primary} {title}".strip(), "videos"))

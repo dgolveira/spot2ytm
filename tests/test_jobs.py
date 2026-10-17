@@ -135,3 +135,22 @@ def test_skip_and_retry_unresolved(store):
     worker.retry_unresolved(tid)  # skipped is a manual decision: kept
     worker.run_once(tid)
     assert store.count_tracks(tid)["skipped"] == 1
+
+
+def test_isrc_is_searched_first_and_only_its_top_result_kept(store):
+    from spot2ytm.jobs import find_match
+    from spot2ytm.models import Track
+
+    class ISRCYT(FakeYT):
+        def search(self, query, filter="songs", limit=10):
+            self.searches.append((query, filter))
+            if query == "GBAAA9500001":
+                return [song("v-exact", "Wonderwall", ["Oasis"], 258), song("v-junk", "Other", ["Someone"], 100)]
+            return super().search(query, filter, limit)
+
+    yt = ISRCYT(CATALOGUE)
+    t = Track(title="Wonderwall", artists=["Oasis"], duration_ms=258000, spotify_id="w", isrc="GBAAA9500001")
+    status, best, candidates = find_match(yt, t)
+    assert status == "matched" and best.video_id == "v-exact"
+    assert yt.searches == [("GBAAA9500001", "songs")]  # confident after one search
+    assert [c.video_id for c in candidates] == ["v-exact"]

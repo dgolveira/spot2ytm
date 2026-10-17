@@ -118,3 +118,70 @@ def test_import_rejects_other_text(app_and_client):
     _, client = app_and_client
     resp = client.post("/import", data={"source": "https://open.spotify.com/user/someone"})
     assert resp.status_code == 400 and "Paste a Spotify playlist" in resp.text
+
+
+EXPORTIFY_HEADER = ("Track URI,Track Name,Artist URI(s),Artist Name(s),Album URI,Album Name,Album Artist URI(s),"
+                    "Album Artist Name(s),Album Release Date,Album Image URL,Disc Number,Track Number,"
+                    "Track Duration (ms),Track Preview URL,Explicit,Popularity,ISRC\n")
+
+
+def exportify_row(uri, title, artists, album, ms, isrc=""):
+    names = ", ".join(a.replace(",", "\\,") for a in artists)
+    cells = [uri, title, "", names, "", album, "", "", "", "", "1", "1", str(ms), "", "false", "50", isrc]
+    return ",".join('"' + c.replace('"', '""') + '"' for c in cells) + "\n"
+
+
+def exportify_csv(*rows):
+    return "﻿" + EXPORTIFY_HEADER + "".join(rows)
+
+
+def test_parse_exportify_csv_and_zip():
+    import io
+    import zipfile
+
+    from spot2ytm.exportify import parse_files
+
+    liked = exportify_csv(
+        exportify_row(f"spotify:track:{WONDERWALL}", "Wonderwall", ["Oasis"], "(What's The Story)", 258000, "GBAAA"),
+        exportify_row("spotify:local:x:y:Demo:200", "Demo", ["Tyler, The Creator", "Kali Uchis"], "", 200000),
+    )
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("liked_songs.csv", liked)
+        zf.writestr("empty.csv", exportify_csv())
+    playlists = parse_files([("spotify_playlists.zip", buf.getvalue()), ("dark_metal.csv", liked.encode())])
+
+    assert [p.name for p in playlists] == ["Liked songs", "Dark metal"]
+    first, local = playlists[0].tracks
+    assert (first.title, first.artists, first.album, first.duration_ms, first.spotify_id, first.isrc) == (
+        "Wonderwall", ["Oasis"], "(What's The Story)", 258000, WONDERWALL, "GBAAA")
+    assert local.spotify_id is None and local.artists == ["Tyler, The Creator", "Kali Uchis"]
+
+
+def test_parse_exportify_rejects_other_files():
+    from spot2ytm.exportify import ExportifyError, parse_files
+
+    with pytest.raises(ExportifyError):
+        parse_files([("notes.txt", b"hello")])
+    with pytest.raises(ExportifyError):
+        parse_files([("other.csv", b"a,b\n1,2\n")])
+
+
+def test_import_exportify_upload_and_confirm(app_and_client):
+    app, client = app_and_client
+    csv_text = exportify_csv(exportify_row(f"spotify:track:{WONDERWALL}", "Wonderwall", ["Oasis"], "", 258000))
+    page = client.post("/import/exportify", files=[("files", ("liked_songs.csv", csv_text.encode(), "text/csv"))])
+    assert page.status_code == 200 and 'value="Liked songs"' in page.text
+    token = page.text.split('name="token" value="')[1].split('"')[0]
+
+    resp = client.post("/import/exportify/confirm", data={
+        "token": token, "playlist_id": "0", "name_0": "Músicas Curtidas", "auto_push": "1",
+    }, follow_redirects=False)
+    tid = int(resp.headers["location"].rsplit("/", 1)[1])
+    app.state.worker.run_once(tid)
+    transfer = app.state.store.get_transfer(tid)
+    assert transfer["name"] == "Músicas Curtidas" and transfer["status"] == "done"
+    assert app.state.yt.playlists[transfer["yt_playlist_id"]] == ["v1"]
+    # The upload can only be confirmed once.
+    assert client.post("/import/exportify/confirm", data={"token": token}, follow_redirects=False).headers[
+        "location"] == "/import"

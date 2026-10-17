@@ -45,7 +45,10 @@ def find_match(yt: YTMusicTarget, track: Track, delay: float = 0.0) -> tuple[str
     for i, (query, filter_) in enumerate(matching.search_queries(track)):
         if i and delay:
             time.sleep(delay)
-        candidates = matching.rank(track, candidates + yt.search(query, filter_, limit=10))
+        results = yt.search(query, filter_, limit=10)
+        if query == track.isrc:
+            results = results[:1]
+        candidates = matching.rank(track, candidates + results)
         if candidates and candidates[0].score >= matching.MATCH_THRESHOLD:
             break
     candidates = candidates[:MAX_CANDIDATES]

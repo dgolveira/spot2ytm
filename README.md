@@ -33,7 +33,7 @@
 ## Features
 
 - **All your playlists**: the ones you created, the ones you collaborate on, and your **Liked Songs**.
-- **Works with Spotify Free**: no login needed, paste a playlist link or the song links copied from the Spotify app.
+- **Works with Spotify Free**: upload the files saved by [Exportify](https://exportify.app) (every playlist and your Liked Songs), or paste a playlist link or the song links copied from the Spotify app.
 - **Smart matching**: compares title, artists, duration and *version*, so you get the studio recording instead of a live take, a karaoke or a sped-up edit.
 - **Review screen**: confident matches go straight in. Uncertain ones are shown side by side with alternatives, and you can accept, pick another version, search by hand or skip.
 - **Re-export safely**: exporting the same playlist again only adds the new songs to the same YouTube Music playlist. No duplicates.
@@ -99,13 +99,22 @@ You do this once. Both steps are explained on screen, too.
 
 ### 1. Spotify
 
-There are two ways to read your music. Pick one:
+There are three ways to read your music. Pick one:
 
-| | Log in (Premium) | Import with links (Free or Premium) |
-|---|---|---|
-| Needs | Spotify Premium and a developer app | Nothing |
-| Picks playlists for you | Yes, including Liked Songs | No, you paste each playlist |
-| Limits | Only playlists you own or collaborate on | Playlist links read the first 100 songs; pasted song links have no limit |
+| | Exportify files (Free or Premium) | Log in (Premium) | Links (Free or Premium) |
+|---|---|---|---|
+| Needs | Logging in at exportify.app | Spotify Premium and a developer app | Nothing |
+| Liked Songs | Yes | Yes | Pasting the song links |
+| Limits | None | Only playlists you own or collaborate on | Playlist links read the first 100 songs |
+
+#### Exportify files (recommended on Spotify Free)
+
+[Exportify](https://exportify.app) is an open-source site ([MIT](https://github.com/watsonbox/exportify)) approved by Spotify, so it can read every playlist and the Liked Songs of any account.
+
+1. Open [exportify.app](https://exportify.app), log in with Spotify and click **Export** next to a playlist (or **Export All** for a .zip with all of them).
+2. In spot2ytm, open **Import**, upload the .csv or .zip files, tick the playlists, fix their names if you want (Exportify writes them in lowercase with `_`) and click **Transfer**.
+
+The files include each song's ISRC, the code of the exact recording, which spot2ytm searches first on YouTube Music.
 
 #### Import with links (no login)
 

@@ -32,7 +32,7 @@
 ## Recursos
 
 - **Todas as suas playlists**: as que você criou, as colaborativas e as suas **Músicas Curtidas**.
-- **Funciona com Spotify Free**: sem login, basta colar o link da playlist ou os links das músicas copiados do app do Spotify.
+- **Funciona com Spotify Free**: envie os arquivos salvos pelo [Exportify](https://exportify.app) (todas as playlists e as Curtidas), ou cole o link da playlist ou os links das músicas copiados do app do Spotify.
 - **Correspondência inteligente**: compara título, artistas, duração e *versão*. Você recebe a gravação de estúdio, e não a ao vivo, o karaokê ou a versão acelerada.
 - **Tela de revisão**: o que tem alta confiança entra direto. O que é duvidoso aparece lado a lado com alternativas, e você aceita, escolhe outra versão, busca na mão ou pula.
 - **Exportar de novo sem medo**: exportar a mesma playlist outra vez só adiciona as músicas novas na mesma playlist do YouTube Music. Sem duplicatas.
@@ -98,13 +98,22 @@ Você faz isso uma vez só, e a própria tela explica cada passo.
 
 ### 1. Spotify
 
-Há dois jeitos de ler suas músicas. Escolha um:
+Há três jeitos de ler suas músicas. Escolha um:
 
-| | Login (Premium) | Importar com links (Free ou Premium) |
-|---|---|---|
-| Precisa de | Spotify Premium e um app de desenvolvedor | Nada |
-| Lista suas playlists | Sim, inclusive as Curtidas | Não, você cola cada playlist |
-| Limites | Só playlists que você criou ou em que colabora | Link de playlist lê as primeiras 100 músicas; links de músicas colados não têm limite |
+| | Arquivos do Exportify (Free ou Premium) | Login (Premium) | Links (Free ou Premium) |
+|---|---|---|---|
+| Precisa de | Entrar no exportify.app | Spotify Premium e um app de desenvolvedor | Nada |
+| Curtidas | Sim | Sim | Colando os links das músicas |
+| Limites | Nenhum | Só playlists que você criou ou em que colabora | Link de playlist lê as primeiras 100 músicas |
+
+#### Arquivos do Exportify (recomendado no Spotify Free)
+
+O [Exportify](https://exportify.app) é um site de código aberto ([MIT](https://github.com/watsonbox/exportify)) aprovado pelo Spotify, então consegue ler todas as playlists e as Curtidas de qualquer conta.
+
+1. Abra o [exportify.app](https://exportify.app), entre com o Spotify e clique em **Export** ao lado de uma playlist (ou em **Export All** para baixar um .zip com todas).
+2. No spot2ytm, abra **Import**, envie os arquivos .csv ou .zip, marque as playlists, ajuste os nomes se quiser (o Exportify escreve em minúsculas com `_`) e clique em **Transfer**.
+
+Os arquivos trazem o ISRC de cada música, o código da gravação exata, que o spot2ytm procura primeiro no YouTube Music.
 
 #### Importar com links (sem login)
 

@@ -7,8 +7,22 @@
   {% if not yt_connected %}
   <div class="alert info">YouTube Music is not connected yet. <a href="/setup/ytmusic">Connect it</a> first, then come back here.</div>
   {% endif %}
-  <p class="muted">Works with Spotify Free: spot2ytm reads Spotify's public pages, so no developer app is needed.</p>
+  <p class="muted">Works with Spotify Free: no developer app is needed.</p>
 
+  <h2>From Exportify (recommended)</h2>
+  <p>Every playlist and your Liked Songs, complete. <a href="https://exportify.app" target="_blank" rel="noopener">Exportify</a>
+    is an open-source site approved by Spotify that saves your playlists as CSV files.</p>
+  <ol class="steps">
+    <li>Open <a href="https://exportify.app" target="_blank" rel="noopener">exportify.app</a> and log in with Spotify.</li>
+    <li>Click <strong>Export</strong> next to a playlist (or <em>Liked Songs</em>), or <strong>Export All</strong> to get a .zip with all of them.</li>
+    <li>Upload the files here. You pick which playlists to transfer on the next screen.</li>
+  </ol>
+  <form method="post" action="/import/exportify" enctype="multipart/form-data" class="inline-form">
+    <input type="file" name="files" accept=".csv,.zip" multiple required aria-label="Exportify files">
+    <button class="btn primary">Upload</button>
+  </form>
+
+  <h2>From links</h2>
   <ol class="steps">
     <li><strong>Public playlist or album:</strong> paste its link (<em>Share → Copy link</em>).
       Spotify's public page only lists the first {{ EMBED_TRACK_LIMIT }} songs.</li>

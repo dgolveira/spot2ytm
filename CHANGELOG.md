@@ -10,6 +10,9 @@ All notable changes to this project are documented here. The format follows
 
 - Import without a Spotify login, for Spotify Free accounts: paste a public playlist or album link
   (first 100 songs) or the song links copied from the Spotify app (no limit, works for Liked Songs).
+- Import the .csv/.zip files saved by Exportify (every playlist and Liked Songs, on Spotify Free too),
+  with a screen to pick the playlists and fix their names.
+- Search YouTube Music by ISRC first when it is known, which finds the exact recording.
 - Connect YouTube Music automatically by reading the YouTube cookies of a browser on this machine,
   instead of pasting request headers by hand.
 
