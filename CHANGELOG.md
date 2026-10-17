@@ -10,6 +10,8 @@ All notable changes to this project are documented here. The format follows
 
 - Import without a Spotify login, for Spotify Free accounts: paste a public playlist or album link
   (first 100 songs) or the song links copied from the Spotify app (no limit, works for Liked Songs).
+- Connect YouTube Music automatically by reading the YouTube cookies of a browser on this machine,
+  instead of pasting request headers by hand.
 
 ## [0.1.0] - 2026-10-17
 

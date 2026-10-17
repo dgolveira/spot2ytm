@@ -1,14 +1,18 @@
 """YouTube Music access through the unofficial ``ytmusicapi`` library.
 
-Authentication uses request headers copied from a logged-in browser session
-(the "browser" method of ytmusicapi), which needs no Google Cloud project.
+Authentication uses a logged-in browser session (the "browser" method of
+ytmusicapi), which needs no Google Cloud project: either request headers pasted
+by the user, or the YouTube cookies read from a browser on this machine.
 """
 
 from __future__ import annotations
 
 import json
+import logging
+import sys
 import threading
 import time
+from contextlib import closing, contextmanager
 from pathlib import Path
 
 from ytmusicapi import YTMusic, setup
@@ -18,6 +22,13 @@ from .config import write_private
 from .models import Candidate
 
 ADD_BATCH_SIZE = 50
+# Browsers whose cookies can be read (by yt-dlp's cookie extractor).
+BROWSERS = {
+    "edge": "Microsoft Edge", "chrome": "Google Chrome", "firefox": "Firefox", "brave": "Brave",
+    "chromium": "Chromium", "opera": "Opera", "vivaldi": "Vivaldi",
+}
+
+log = logging.getLogger(__name__)
 
 
 class YTMError(Exception):
@@ -35,6 +46,97 @@ def parse_result(raw: dict) -> Candidate | None:
         duration_s=raw.get("duration_seconds"),
         result_type="video" if raw.get("resultType") == "video" else "song",
     )
+
+
+class _CookieLogger:
+    """Quiet logger for yt-dlp's cookie extractor that counts decryption failures."""
+
+    def __init__(self) -> None:
+        self.decrypt_failures = 0
+
+    def debug(self, message: str, *args, **kwargs) -> None:
+        log.debug("%s", message)
+
+    info = debug
+
+    def warning(self, message: str, *args, **kwargs) -> None:
+        if "failed to decrypt" in message:
+            self.decrypt_failures += 1
+        else:
+            log.warning("%s", message)
+
+    def error(self, message: str, *args, **kwargs) -> None:
+        log.error("%s", message)
+
+
+def _keyring_secrets(labels: list[str]) -> list[bytes]:
+    """Secrets of the GNOME keyring items with one of these labels."""
+    try:
+        import secretstorage
+    except ImportError:
+        return []
+    try:
+        with closing(secretstorage.dbus_init()) as conn:
+            collection = secretstorage.get_default_collection(conn)
+            return [item.get_secret() for item in collection.get_all_items() if item.get_label() in labels]
+    except Exception as exc:  # no keyring service, locked collection...
+        log.debug("keyring not available: %s", exc)
+        return []
+
+
+@contextmanager
+def _keyring_secret(secret: bytes | None):
+    """Make yt-dlp decrypt with this secret instead of looking it up itself."""
+    import yt_dlp.cookies as ytc
+
+    if secret is None:
+        yield
+        return
+    original = ytc._get_gnome_keyring_password
+    ytc._get_gnome_keyring_password = lambda browser_keyring_name, logger: secret
+    try:
+        yield
+    finally:
+        ytc._get_gnome_keyring_password = original
+
+
+def _candidate_secrets(browser: str) -> list[bytes | None]:
+    """Keys to try for a Chromium-based browser on Linux.
+
+    yt-dlp takes the first keyring item named "<browser> Safe Storage", but
+    several apps can own one with the same name (VS Code and other Electron
+    apps also create "Chromium Safe Storage", and Edge uses that name too), so
+    try each of them until one decrypts the cookies.
+    """
+    import yt_dlp.cookies as ytc
+
+    if not sys.platform.startswith("linux") or browser not in ytc.CHROMIUM_BASED_BROWSERS:
+        return [None]
+    name = ytc._get_chromium_based_browser_settings(browser)["keyring_name"]
+    labels = list(dict.fromkeys([f"{name} Safe Storage", f"{BROWSERS[browser]} Safe Storage"]))
+    return [None, *_keyring_secrets(labels)]
+
+
+def browser_cookies(browser: str) -> dict[str, str]:
+    """YouTube cookies of a browser installed on this machine."""
+    from yt_dlp.cookies import extract_cookies_from_browser
+
+    cookies: dict[str, str] = {}
+    failures = 0
+    for secret in _candidate_secrets(browser):
+        logger = _CookieLogger()
+        with _keyring_secret(secret):
+            jar = extract_cookies_from_browser(browser, logger=logger)
+        cookies = {c.name: c.value for c in jar if c.domain.lstrip(".").endswith("youtube.com") and c.value}
+        failures = logger.decrypt_failures
+        if not failures:
+            return cookies
+    if failures and "SAPISID" not in cookies and "__Secure-3PAPISID" not in cookies:
+        raise YTMError(
+            f"the browser's cookies are encrypted with a key from the system keyring that could not be used "
+            f"({failures} cookies could not be decrypted)"
+        )
+    return cookies
 
 
 class YTMusicClient:
@@ -85,6 +187,31 @@ class YTMusicClient:
             self._api = api
             self._account = account
         return account
+
+    def connect_from_browser(self, browser: str, read_cookies=browser_cookies) -> dict:
+        """Log in with the YouTube cookies of a browser on this machine."""
+        name = BROWSERS.get(browser)
+        if name is None:
+            raise YTMError("Unknown browser.")
+        try:
+            cookies = read_cookies(browser)
+        except Exception as exc:
+            raise YTMError(
+                f"Could not read the cookies of {name}: {exc}. Try another browser, or paste the headers by hand."
+            ) from exc
+        if "SAPISID" not in cookies and "__Secure-3PAPISID" not in cookies:
+            raise YTMError(
+                f"No YouTube login found in {name}. Open music.youtube.com there, log in, and try again."
+            )
+        # ytmusicapi computes the real authorization header from the SAPISID
+        # cookie on every request; it only needs one to be present here.
+        headers = [
+            "cookie: " + "; ".join(f"{k}={v}" for k, v in cookies.items()),
+            "x-goog-authuser: 0",
+            "authorization: SAPISIDHASH placeholder",
+            "origin: https://music.youtube.com",
+        ]
+        return self.connect_with_headers("\n".join(headers))
 
     def disconnect(self) -> None:
         with self._lock:

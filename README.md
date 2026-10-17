@@ -137,7 +137,15 @@ That's all. No client secret is needed: spot2ytm uses the [PKCE flow](https://de
 
 ### 2. YouTube Music
 
-YouTube Music has no public API for managing playlists, so spot2ytm uses [ytmusicapi](https://github.com/sigma67/ytmusicapi) with the headers of your logged-in browser session.
+YouTube Music has no public API for managing playlists, so spot2ytm uses [ytmusicapi](https://github.com/sigma67/ytmusicapi) with your logged-in browser session.
+
+**Automatic:** log in to [music.youtube.com](https://music.youtube.com) in your browser, pick that browser in spot2ytm (Edge, Chrome, Firefox, Brave, Chromium, Opera or Vivaldi) and click **Connect from browser**. spot2ytm reads the browser's YouTube cookies from your computer, using [yt-dlp](https://github.com/yt-dlp/yt-dlp)'s cookie reader.
+
+- On Linux, Chrome-based browsers encrypt cookies with a key kept in the system keyring, so you may be asked to unlock it. If several apps (VS Code, for example) saved a key under the same name, spot2ytm tries each one.
+- On Windows, Chrome and Edge lock their cookies: use Firefox or paste the headers by hand.
+- Not available in Docker, where there is no browser.
+
+**By hand:**
 
 1. Open [music.youtube.com](https://music.youtube.com) and make sure you are logged in.
 2. Open the developer tools (<kbd>F12</kbd>) → **Network** tab and type `browse` in the filter.

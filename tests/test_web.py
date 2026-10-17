@@ -84,3 +84,26 @@ def test_callback_rejects_unknown_state(app_and_client):
     _, client = app_and_client
     resp = client.get("/auth/spotify/callback", params={"state": "nope", "code": "x"}, follow_redirects=False)
     assert "error" in resp.headers["location"]
+
+
+def test_connect_from_browser_errors(app_and_client, settings):
+    from spot2ytm.ytm import YTMError, YTMusicClient
+
+    yt = YTMusicClient(settings.ytmusic_auth_file)
+    with pytest.raises(YTMError, match="Unknown browser"):
+        yt.connect_from_browser("netscape")
+    with pytest.raises(YTMError, match="No YouTube login found in Microsoft Edge"):
+        yt.connect_from_browser("edge", read_cookies=lambda b: {"PREF": "x"})
+
+    def locked(browser):
+        raise PermissionError("database is locked")
+
+    with pytest.raises(YTMError, match="Could not read the cookies of Firefox: database is locked"):
+        yt.connect_from_browser("firefox", read_cookies=locked)
+    assert not yt.connected
+
+
+def test_ytmusic_setup_page_offers_browsers(app_and_client):
+    _, client = app_and_client
+    page = client.get("/setup/ytmusic").text
+    assert "Connect from browser" in page and "Microsoft Edge" in page

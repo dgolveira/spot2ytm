@@ -24,6 +24,8 @@ dependencies = [
     "jinja2>=3.1",
     "python-multipart>=0.0.9",
     "rapidfuzz>=3.9",
+    "yt-dlp>=2026.8.19",
+    "secretstorage>=3.3; sys_platform == 'linux'",
     "ytmusicapi>=1.10",
 ]
 

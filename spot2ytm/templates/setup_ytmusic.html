@@ -5,8 +5,22 @@
   <h1>Connect YouTube Music</h1>
   {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
   <p class="muted">YouTube Music has no public API for playlists, so spot2ytm talks to it the way your browser does,
-    using the headers of a logged-in session. They stay in your local <code>data/</code> folder.</p>
+    with the session of a browser where you are logged in. It stays in your local <code>data/</code> folder.</p>
 
+  <h2>Automatic</h2>
+  <p>Pick the browser where you are logged in to <a href="https://music.youtube.com" target="_blank" rel="noopener">music.youtube.com</a>.
+    spot2ytm reads its YouTube cookies from this computer.</p>
+  <form method="post" action="/setup/ytmusic/browser" class="inline-form">
+    <select name="browser" aria-label="Browser">
+      {% for key, label in browsers.items() %}<option value="{{ key }}" {% if browser == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <button class="btn primary">Connect from browser</button>
+  </form>
+  <p class="muted small">On Linux your system may ask for your keyring password, which the browser uses to protect its cookies.
+    On Windows, Chrome and Edge lock their cookies: use Firefox, or paste the headers below. Not available when running in Docker.</p>
+
+  <details {% if headers_raw %}open{% endif %}>
+    <summary><strong>Or paste the headers by hand</strong></summary>
   <ol class="steps">
     <li>Open <a href="https://music.youtube.com" target="_blank" rel="noopener">music.youtube.com</a> in Chrome, Edge or Firefox and make sure you are logged in.</li>
     <li>Open the developer tools (<kbd>F12</kbd> or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd>) and go to the <strong>Network</strong> tab.</li>
@@ -27,9 +41,10 @@
               placeholder="accept: */*&#10;authorization: SAPISIDHASH …&#10;cookie: …&#10;x-goog-authuser: 0&#10;…">{{ headers_raw }}</textarea>
     <button class="btn primary">Connect</button>
   </form>
+  </details>
   <details class="muted small">
     <summary>Is this safe?</summary>
-    <p>The headers give access to your Google account session, just like your browser cookies. spot2ytm keeps them in
+    <p>The cookies and headers give access to your Google account session. spot2ytm keeps them in
       <code>data/ytmusic_auth.json</code> (readable only by your user) and only sends them to music.youtube.com.
       Never share that file. Logging out of YouTube Music in the browser invalidates them; they otherwise last a long time.</p>
   </details>

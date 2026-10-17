@@ -37,6 +37,8 @@ OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 | [Jinja2](https://github.com/pallets/jinja) | BSD-3-Clause |
 | [python-multipart](https://github.com/Kludex/python-multipart) | Apache-2.0 |
 | [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz) | MIT |
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Unlicense |
+| [SecretStorage](https://github.com/mitya57/secretstorage) (Linux only) | BSD-3-Clause |
 
 ## Trademarks
 

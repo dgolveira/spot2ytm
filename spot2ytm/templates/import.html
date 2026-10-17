@@ -4,6 +4,9 @@
 <section class="narrow">
   <h1>Import without logging in to Spotify</h1>
   {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+  {% if not yt_connected %}
+  <div class="alert info">YouTube Music is not connected yet. <a href="/setup/ytmusic">Connect it</a> first, then come back here.</div>
+  {% endif %}
   <p class="muted">Works with Spotify Free: spot2ytm reads Spotify's public pages, so no developer app is needed.</p>
 
   <ol class="steps">

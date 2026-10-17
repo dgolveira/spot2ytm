@@ -136,7 +136,15 @@ Só isso. Não precisa de client secret, porque o spot2ytm usa o [fluxo PKCE](ht
 
 ### 2. YouTube Music
 
-O YouTube Music não tem API pública para playlists, então o spot2ytm usa a [ytmusicapi](https://github.com/sigma67/ytmusicapi) com os cabeçalhos da sua sessão logada no navegador.
+O YouTube Music não tem API pública para playlists, então o spot2ytm usa a [ytmusicapi](https://github.com/sigma67/ytmusicapi) com a sua sessão logada no navegador.
+
+**Automático:** entre no [music.youtube.com](https://music.youtube.com) pelo navegador, escolha esse navegador no spot2ytm (Edge, Chrome, Firefox, Brave, Chromium, Opera ou Vivaldi) e clique em **Connect from browser**. O spot2ytm lê os cookies do YouTube desse navegador no seu computador, com o leitor de cookies do [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+
+- No Linux, os navegadores baseados no Chrome criptografam os cookies com uma chave guardada no chaveiro do sistema, então ele pode pedir para desbloquear o chaveiro. Se mais de um app (o VS Code, por exemplo) tiver salvo uma chave com o mesmo nome, o spot2ytm testa cada uma.
+- No Windows, o Chrome e o Edge bloqueiam os cookies: use o Firefox ou cole os cabeçalhos à mão.
+- Não funciona no Docker, onde não há navegador.
+
+**À mão:**
 
 1. Abra o [music.youtube.com](https://music.youtube.com) logado.
 2. Abra as ferramentas de desenvolvedor (<kbd>F12</kbd>), vá na aba **Network** (Rede) e digite `browse` no filtro.

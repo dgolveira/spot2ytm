@@ -24,7 +24,7 @@ from .jobs import Worker, new_transfer
 from .models import Candidate, Track
 from .public import EMBED_TRACK_LIMIT, PublicSpotify, PublicSpotifyError, parse_link, track_ids
 from .spotify import LIKED_SONGS_ID, SpotifyAuthError, SpotifyClient, SpotifyError, authorize_url, make_pkce_pair
-from .ytm import YTMError, YTMusicClient
+from .ytm import BROWSERS, YTMError, YTMusicClient
 
 log = logging.getLogger(__name__)
 HERE = Path(__file__).parent
@@ -194,14 +194,24 @@ def create_app(
 
     @app.get("/setup/ytmusic", response_class=HTMLResponse)
     def setup_ytmusic(request: Request):
-        return render(request, "setup_ytmusic.html", error=None, headers_raw="")
+        return render(request, "setup_ytmusic.html", error=None, headers_raw="", browsers=BROWSERS)
 
     @app.post("/setup/ytmusic", response_class=HTMLResponse)
     def save_ytmusic(request: Request, headers_raw: str = Form("")):
         try:
             app.state.yt.connect_with_headers(headers_raw)
         except YTMError as exc:
-            return render(request, "setup_ytmusic.html", status_code=400, error=str(exc), headers_raw=headers_raw)
+            return render(request, "setup_ytmusic.html", status_code=400, error=str(exc), headers_raw=headers_raw,
+                          browsers=BROWSERS)
+        return RedirectResponse("/", 303)
+
+    @app.post("/setup/ytmusic/browser", response_class=HTMLResponse)
+    def ytmusic_from_browser(request: Request, browser: str = Form("")):
+        try:
+            app.state.yt.connect_from_browser(browser)
+        except YTMError as exc:
+            return render(request, "setup_ytmusic.html", status_code=400, error=str(exc), headers_raw="",
+                          browsers=BROWSERS, browser=browser)
         return RedirectResponse("/", 303)
 
     @app.post("/auth/ytmusic/disconnect")
