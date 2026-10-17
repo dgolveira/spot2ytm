@@ -12,12 +12,15 @@ so Free users import through the pages behind Spotify's embeddable players
 from __future__ import annotations
 
 import json
+import logging
 import re
 import time
 
 import httpx
 
 from .models import Playlist, Track
+
+log = logging.getLogger(__name__)
 
 EMBED_URL = "https://open.spotify.com/embed/{kind}/{id}"
 EMBED_TRACK_LIMIT = 100  # embed pages never list more songs than this
@@ -81,6 +84,7 @@ class PublicSpotify:
                         return entity
                     break
                 error = f"Spotify answered {resp.status_code}"
+            log.warning("Spotify public page failed, retrying", extra={"url": url, "attempt": attempt + 1, "error": error})
             time.sleep(1 + attempt * 2)
         else:
             raise PublicSpotifyError(error)
@@ -104,6 +108,7 @@ class PublicSpotify:
                 duration_ms=int(item.get("duration") or 0),
                 spotify_id=uri.rsplit(":", 1)[1],
             ))
+        log.info("public Spotify page read", extra={"kind": kind, "spotifyId": id_, "name": name, "songs": len(tracks)})
         playlist = Playlist(
             id=f"public:{kind}:{id_}",
             name=name,

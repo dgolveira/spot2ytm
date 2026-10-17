@@ -12,6 +12,7 @@ import base64
 import hashlib
 import html
 import json
+import logging
 import re
 import secrets
 import threading
@@ -31,6 +32,8 @@ API_URL = "https://api.spotify.com/v1"
 SCOPES = "playlist-read-private playlist-read-collaborative user-library-read"
 
 LIKED_SONGS_ID = "liked"
+
+log = logging.getLogger(__name__)
 
 
 class SpotifyError(Exception):
@@ -151,7 +154,9 @@ class SpotifyClient:
                 url, params=params, headers={"Authorization": f"Bearer {self._access_token()}"}
             )
             if resp.status_code == 429:
-                time.sleep(min(int(resp.headers.get("Retry-After", "2")), 30))
+                wait = min(int(resp.headers.get("Retry-After", "2")), 30)
+                log.warning("Spotify rate limit, waiting", extra={"url": url, "waitSeconds": wait})
+                time.sleep(wait)
                 continue
             if resp.status_code == 401 and attempt == 0:
                 # Token revoked or clock skew: force a refresh once.
@@ -159,6 +164,7 @@ class SpotifyClient:
                     self._token["expires_at"] = 0
                 continue
             if resp.status_code >= 500 and attempt < 4:
+                log.warning("Spotify server error, retrying", extra={"url": url, "statusCode": resp.status_code})
                 time.sleep(1 + attempt)
                 continue
             if resp.status_code >= 400:

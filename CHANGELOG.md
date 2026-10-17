@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Logs are JSON lines in pino's format (levels, fields and error serializer), on stdout and in
+  `data/spot2ytm.log`, with every request and every matched song. Set the level with
+  `SPOT2YTM_LOG_LEVEL`/`LOG_LEVEL` or `--log-level`.
+- Docker: log rotation and a health check in `docker-compose.yml`.
+
 - Nothing is written to YouTube Music before you confirm: every transfer stops after the search,
   shows what was found and waits. The dashboard lists the playlists waiting for confirmation, to
   create several at once, and privacy is chosen at that step.

@@ -186,6 +186,7 @@ class YTMusicClient:
         with self._lock:
             self._api = api
             self._account = account
+        log.info("YouTube Music connected", extra={"account": account.get("accountName")})
         return account
 
     def connect_from_browser(self, browser: str, read_cookies=browser_cookies) -> dict:
@@ -250,6 +251,8 @@ class YTMusicClient:
                 break
             except Exception as exc:  # network hiccups, throttling
                 last_exc = exc
+                log.warning("YouTube Music search failed, retrying",
+                            extra={"query": query, "filter": filter, "attempt": attempt + 1, "error": str(exc)})
                 time.sleep(2**attempt)
         else:
             raise YTMError(f"Search failed for {query!r}: {last_exc}")
@@ -283,6 +286,7 @@ class YTMusicClient:
             result = self._authed().create_playlist(title, description[:5000], privacy_status=privacy)
         if not isinstance(result, str):
             raise YTMError(f"Could not create the playlist: {result}")
+        log.info("playlist created on YouTube Music", extra={"title": title, "privacy": privacy, "ytPlaylistId": result})
         return result
 
     def add_items(self, playlist_id: str, video_ids: list[str]) -> None:
@@ -294,6 +298,7 @@ class YTMusicClient:
                 result = self._authed().add_playlist_items(playlist_id, batch, duplicates=True)
             if not isinstance(result, dict) or "SUCCEEDED" not in str(result.get("status", "")):
                 raise YTMError(f"Adding songs failed: {str(result)[:300]}")
+            log.debug("songs added to playlist", extra={"ytPlaylistId": playlist_id, "count": len(batch)})
             time.sleep(0.5)
 
     @staticmethod

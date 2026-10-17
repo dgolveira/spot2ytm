@@ -6,6 +6,7 @@ import csv
 import io
 import json
 import logging
+import os
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -22,6 +23,7 @@ from .config import Settings
 from .db import ACTIVE_STATUSES, Store, row_candidates, row_track
 from .exportify import ExportedPlaylist, ExportifyError, parse_files
 from .jobs import Worker, new_transfer
+from .logs import Timer
 from .models import Candidate, Track
 from .public import EMBED_TRACK_LIMIT, PublicSpotify, PublicSpotifyError, parse_link, track_ids
 from .spotify import LIKED_SONGS_ID, SpotifyAuthError, SpotifyClient, SpotifyError, authorize_url, make_pkce_pair
@@ -80,6 +82,28 @@ def create_app(
     # whose Host is not ours (DNS rebinding) and cross-site form posts (CSRF).
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
 
+    request_ids = iter(range(1, 1 << 62))
+
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        # pino-http's "request completed" line. Static files and the progress
+        # polling are logged at debug so info stays readable.
+        timer = Timer()
+        req = {"id": next(request_ids), "method": request.method, "url": str(request.url.path)}
+        try:
+            response = await call_next(request)
+        except Exception:
+            log.exception("request errored", extra={"req": req, "responseTime": timer.ms})
+            raise
+        path = request.url.path
+        quiet = path.startswith("/static/") or path.endswith("/status") or path == "/partials/transfers"
+        status = response.status_code
+        level = logging.ERROR if status >= 500 else logging.WARNING if status >= 400 else (
+            logging.DEBUG if quiet else logging.INFO)
+        log.log(level, "request completed",
+                extra={"req": req, "res": {"statusCode": status}, "responseTime": timer.ms})
+        return response
+
     @app.middleware("http")
     async def same_origin_posts(request: Request, call_next):
         if request.method not in ("GET", "HEAD", "OPTIONS"):
@@ -96,6 +120,8 @@ def create_app(
     templates.env.globals["MATCH_THRESHOLD"] = matching.MATCH_THRESHOLD
     templates.env.globals["EMBED_TRACK_LIMIT"] = EMBED_TRACK_LIMIT
     templates.env.globals["privacy_options"] = PRIVACY_OPTIONS
+    # No browser to read cookies from inside the container.
+    templates.env.globals["in_docker"] = bool(os.environ.get("SPOT2YTM_IN_DOCKER"))
 
     def render(request: Request, name: str, status_code: int = 200, headers: dict | None = None, **ctx):
         ctx.setdefault("spotify_connected", app.state.spotify.connected)

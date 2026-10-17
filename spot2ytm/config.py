@@ -36,6 +36,10 @@ class Settings:
     # Seconds to wait between YouTube Music searches, to stay polite.
     search_delay: float = 0.2
     allowed_hosts: list[str] = field(default_factory=list)
+    # pino level names: trace, debug, info, warn, error, fatal, silent.
+    log_level: str = "info"
+    # Logs also go to this file ("" for stdout only).
+    log_file: str = ""
 
     @property
     def spotify_redirect_uri(self) -> str:
@@ -82,7 +86,10 @@ class Settings:
             port=port,
             base_url=env.get("SPOT2YTM_BASE_URL", f"http://127.0.0.1:{port}").rstrip("/"),
             search_delay=float(env.get("SPOT2YTM_SEARCH_DELAY", "0.2")),
+            log_level=env.get("SPOT2YTM_LOG_LEVEL") or env.get("LOG_LEVEL") or "info",
         )
+        log_file = env.get("SPOT2YTM_LOG_FILE")
+        settings.log_file = str(data_dir / "spot2ytm.log") if log_file is None else log_file
         stored = settings._read_stored()
         settings.spotify_client_id = env.get("SPOT2YTM_SPOTIFY_CLIENT_ID") or stored.get(
             "spotify_client_id", ""

@@ -8,7 +8,20 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - ./data:/data
+    environment:
+      # pino levels: trace, debug, info, warn, error, fatal, silent
+      SPOT2YTM_LOG_LEVEL: ${SPOT2YTM_LOG_LEVEL:-info}
     env_file:
       - path: .env
         required: false
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/static/favicon.svg', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped

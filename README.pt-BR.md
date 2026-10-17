@@ -86,7 +86,8 @@ cd spot2ytm
 docker compose up -d
 ```
 
-Depois abra **http://127.0.0.1:8000**. Os dados ficam em `./data`.
+Depois abra **http://127.0.0.1:8000**. Os dados ficam em `./data`, e os logs saem com `docker compose logs -f`.
+No Docker o app não consegue ler os cookies do navegador, então conecte o YouTube Music colando os cabeçalhos.
 
 > [!IMPORTANT]
 > Na redirect URI do Spotify, use `127.0.0.1`, **e não** `localhost`.
@@ -213,6 +214,20 @@ Funciona sem configurar nada. Se quiser mudar algo, copie o [`.env.example`](.en
 | `SPOT2YTM_BASE_URL` | `http://127.0.0.1:<porta>` | Endereço usado no navegador. A redirect URI do Spotify é montada a partir dele |
 | `SPOT2YTM_ALLOWED_HOSTS` | | Nomes de `Host` extras aceitos, separados por vírgula |
 | `SPOT2YTM_SEARCH_DELAY` | `0.2` | Pausa entre buscas no YouTube Music, em segundos |
+| `SPOT2YTM_LOG_LEVEL` (ou `LOG_LEVEL`) | `info` | `trace`, `debug`, `info`, `warn`, `error`, `fatal` ou `silent` |
+| `SPOT2YTM_LOG_FILE` | `<pasta de dados>/spot2ytm.log` | Também grava os logs nesse arquivo (rotaciona em 10 MB). Vazio para só stdout |
+
+### Logs
+
+Os logs são linhas JSON no formato do [pino](https://getpino.io) (`level` de 10 a 60, `time` em ms, `pid`, `hostname`, `name`, `msg` e erros em `err`), então as ferramentas do pino leem direto. Saem no stdout e em `data/spot2ytm.log`.
+
+```bash
+docker compose logs -f spot2ytm                  # acompanhar (Docker)
+tail -f data/spot2ytm.log | npx pino-pretty      # legível
+spot2ytm --log-level debug                       # inclui cada busca no YouTube Music
+```
+
+No nível `info` aparecem cada requisição e cada música assim que é processada (título, ISRC, status, nota e o que foi encontrado). O `debug` acrescenta cada busca e seus resultados. Credenciais, cookies e tokens nunca vão para o log.
 
 ## Dúvidas frequentes
 

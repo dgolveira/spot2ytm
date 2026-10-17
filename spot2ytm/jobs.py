@@ -7,6 +7,7 @@ was interrupted (app closed, crash) resumes where it stopped on next start.
 
 from __future__ import annotations
 
+import json
 import logging
 import queue
 import threading
@@ -15,6 +16,7 @@ from typing import Protocol
 
 from . import matching
 from .db import Store, row_candidates, row_track
+from .logs import Timer
 from .models import Candidate, Playlist, Track
 from .public import PublicSpotifyError
 
@@ -49,6 +51,10 @@ def find_match(yt: YTMusicTarget, track: Track, delay: float = 0.0) -> tuple[str
         if query == track.isrc:
             results = results[:1]
         candidates = matching.rank(track, candidates + results)
+        log.debug("search", extra={
+            "query": query, "filter": filter_, "results": len(results),
+            "bestScore": round(candidates[0].score, 3) if candidates else None,
+        })
         if candidates and candidates[0].score >= matching.MATCH_THRESHOLD:
             break
     candidates = candidates[:MAX_CANDIDATES]
@@ -100,6 +106,7 @@ class Worker:
 
     def cancel(self, transfer_id: int) -> None:
         self.store.update_transfer(transfer_id, pending_action=None, status="cancelled")
+        log.info("transfer cancelled", extra={"transferId": transfer_id})
 
     def retry_unresolved(self, transfer_id: int) -> None:
         """Search again for tracks that were not confidently matched."""
@@ -123,7 +130,7 @@ class Worker:
         try:
             self._process(transfer_id)
         except Exception as exc:  # report it in the UI instead of dying
-            log.exception("transfer %s failed", transfer_id)
+            log.exception("transfer failed", extra={"transferId": transfer_id})
             self.store.update_transfer(transfer_id, status="error", error=str(exc), pending_action=None)
 
     def _run(self) -> None:
@@ -143,6 +150,9 @@ class Worker:
         transfer = self.store.get_transfer(transfer_id)
         if transfer is None or transfer["pending_action"] is None:
             return
+        log.info("transfer started", extra={
+            "transferId": transfer_id, "playlist": transfer["name"], "action": transfer["pending_action"],
+        })
         if transfer["pending_action"] == "match":
             if not self._match(transfer_id):
                 return
@@ -160,6 +170,7 @@ class Worker:
             self.store.update_transfer(transfer_id, status="fetching")
             tracks = self.spotify.playlist_tracks(transfer["spotify_playlist_id"])
             self.store.add_tracks(transfer_id, tracks)
+            log.info("songs read from Spotify", extra={"transferId": transfer_id, "songs": len(tracks)})
         if not self._fill_pasted(transfer_id):
             return False
 
@@ -168,15 +179,18 @@ class Worker:
         total = self.store.get_transfer(transfer_id)["total"]
         done = total - len(pending)
         self.store.update_transfer(transfer_id, progress=done)
+        timer = Timer()
+        log.info("searching YouTube Music", extra={"transferId": transfer_id, "songs": len(pending), "total": total})
 
         for row in pending:
             if done % 10 == 0 and self._cancelled(transfer_id):
                 return False
             cached = self.store.cached_match(row["cache_key"])
             if cached:
+                candidates = row_candidates(cached)
+                status, video_id, score = cached["status"], cached["video_id"], cached["score"]
                 self.store.set_track_match(
-                    row["id"], cached["status"], cached["video_id"], cached["score"],
-                    row_candidates(cached), manual=bool(cached["manual"]),
+                    row["id"], status, video_id, score, candidates, manual=bool(cached["manual"]),
                 )
             else:
                 track = row_track(row)
@@ -187,8 +201,21 @@ class Worker:
                 self.store.cache_match(row["cache_key"], status, video_id, score, candidates)
                 if self.search_delay:
                     time.sleep(self.search_delay)
+            found = next((c for c in candidates if c.video_id == video_id), None) if video_id else None
+            log.info("song matched", extra={
+                "transferId": transfer_id, "position": row["position"] + 1,
+                "song": {"title": row["title"], "artists": json.loads(row["artists"]), "isrc": row["isrc"]},
+                "status": status, "score": round(score, 3) if score is not None else None, "cached": bool(cached),
+                "match": {"videoId": video_id, "title": found.title, "artists": found.artists,
+                          "type": found.result_type} if found else None,
+            })
             done += 1
             self.store.update_transfer(transfer_id, progress=done)
+        counts = self.store.count_tracks(transfer_id)
+        log.info("search finished", extra={
+            "transferId": transfer_id, "durationMs": timer.ms, "matched": counts["matched"],
+            "uncertain": counts["uncertain"], "notFound": counts["not_found"], "skipped": counts["skipped"],
+        })
         return True
 
     def _fill_pasted(self, transfer_id: int) -> bool:
@@ -203,7 +230,8 @@ class Worker:
             try:
                 self.store.fill_track(row["id"], self.public.track(row["spotify_id"]))
             except PublicSpotifyError as exc:
-                log.warning("track %s: %s", row["spotify_id"], exc)
+                log.warning("Spotify song unavailable", extra={"transferId": transfer_id, "spotifyId": row["spotify_id"],
+                                                              "error": str(exc)})
                 self.store.fill_track(row["id"], Track(title=f"Unavailable song ({row['spotify_id']})", artists=[]))
                 self.store.set_track_match(row["id"], "not_found", None, None, [])
             self.store.update_transfer(transfer_id, progress=i + 1)
@@ -247,6 +275,10 @@ class Worker:
         # Covers songs listed twice on Spotify: only one copy goes to YouTube.
         self.store.mark_added([r["id"] for r in rows])
         self.store.update_transfer(transfer_id, status="done", pending_action=None)
+        log.info("transfer done", extra={
+            "transferId": transfer_id, "ytPlaylistId": playlist_id, "added": len(batch),
+            "alreadyThere": len(rows) - len(batch),
+        })
 
     # -- manual review --------------------------------------------------------
 
@@ -259,12 +291,18 @@ class Worker:
         if row["video_id"] != candidate.video_id:
             self.store.mark_added([track_row_id], added=False)
         self.store.cache_match(row["cache_key"], "matched", candidate.video_id, candidate.score, candidates, manual=True)
+        log.info("song chosen by hand", extra={
+            "transferId": row["transfer_id"], "position": row["position"] + 1, "song": row["title"],
+            "videoId": candidate.video_id, "match": candidate.title,
+        })
 
     def skip(self, track_row_id: int) -> None:
         row = self.store.get_track(track_row_id)
         candidates = row_candidates(row)
         self.store.set_track_match(track_row_id, "skipped", None, None, candidates, manual=True)
         self.store.cache_match(row["cache_key"], "skipped", None, None, candidates, manual=True)
+        log.info("song skipped", extra={"transferId": row["transfer_id"], "position": row["position"] + 1,
+                                        "song": row["title"]})
 
 
 def new_transfer(store: Store, playlist: Playlist, privacy: str = "PRIVATE", auto_push: bool = False) -> int:
