@@ -1,0 +1,22 @@
+{% if error %}<p class="error-text small">{{ error }}</p>{% endif %}
+{% if q %}<p class="muted small">Results for “{{ q }}”</p>{% endif %}
+{% if results %}
+<ul class="candidates">
+  {% for c in results %}
+  {% set cd = c.to_dict() if c.to_dict is defined else c %}
+  <li class="{{ 'current' if cd.video_id == t.video_id }}">
+    <div class="grow">
+      <a href="https://music.youtube.com/watch?v={{ cd.video_id }}" target="_blank" rel="noopener" title="Listen on YouTube Music">{{ cd.title }}</a>
+      {% if cd.result_type == 'video' %}<span class="tag">video</span>{% endif %}
+      <div class="muted small">{{ cd.artists | join(', ') }}{% if cd.album %} · {{ cd.album }}{% endif %}{% if cd.duration_s %} · {{ cd.duration_s | duration }}{% endif %} · {{ (cd.score * 100) | round | int }}%</div>
+    </div>
+    {% if cd.video_id != t.video_id or t.status != 'matched' %}
+    <button class="btn small" hx-post="/tracks/{{ t.id }}/choose" hx-target="#track-{{ t.id }}" hx-swap="outerHTML"
+            hx-vals='{"candidate": {{ cd | tojson | tojson }}}'>Use this</button>
+    {% else %}<span class="tag ok">current</span>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="muted small">No candidates. Try searching with different words.</p>
+{% endif %}

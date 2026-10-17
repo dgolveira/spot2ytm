@@ -1,0 +1,13 @@
+# Local state: tokens, YouTube Music headers, match cache. Never commit this.
+data/
+.env
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage

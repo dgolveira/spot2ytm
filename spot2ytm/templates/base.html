@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}spot2ytm{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', path='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+  <script src="{{ url_for('static', path='htmx.min.js') }}" defer></script>
+  <script src="{{ url_for('static', path='app.js') }}" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <img src="{{ url_for('static', path='favicon.svg') }}" alt="" width="28" height="28">
+      <span>spot<b>2</b>ytm</span>
+    </a>
+    <nav>
+      <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Dashboard</a>
+      <a href="/playlists" {% if request.url.path.startswith('/playlists') %}aria-current="page"{% endif %}>Playlists</a>
+    </nav>
+    <div class="conn">
+      <span class="dot {{ 'ok' if spotify_connected else 'off' }}" title="Spotify {{ 'connected' if spotify_connected else 'not connected' }}"></span>Spotify
+      <span class="dot {{ 'ok' if yt_connected else 'off' }}" title="YouTube Music {{ 'connected' if yt_connected else 'not connected' }}"></span>YT Music
+    </div>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer>
+    spot2ytm {{ version }} · runs on your machine, your credentials never leave it ·
+    <a href="https://github.com/dgolveira/spot2ytm" target="_blank" rel="noopener">GitHub</a>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<div id="transfer-status"
+     hx-get="/transfers/{{ transfer.id }}/status?was={{ transfer.status }}"
+     hx-trigger="{% if active %}every 1500ms, {% endif %}counts-changed from:body"
+     hx-swap="outerHTML">
+  <div class="status-line">
+    {% set t = transfer %}{% include "partials/status_badge.html" %}
+    {% if transfer.status == 'fetching' %}<span class="muted">Reading songs from Spotify…</span>
+    {% elif transfer.status == 'matching' %}<span class="muted">Searching YouTube Music · {{ transfer.progress }} / {{ transfer.total }}</span>
+    {% elif transfer.status == 'pushing' %}<span class="muted">Adding songs · {{ counts.added }} / {{ counts.matched }}</span>
+    {% elif transfer.status == 'queued' %}<span class="muted">Waiting for other transfers to finish…</span>
+    {% endif %}
+    {% if yt_url %}<a class="btn small ytm-link" href="{{ yt_url }}" target="_blank" rel="noopener">Open on YouTube Music ↗</a>{% endif %}
+  </div>
+
+  {% if active and transfer.total %}
+  <progress max="{{ counts.matched if transfer.status == 'pushing' else transfer.total }}"
+            value="{{ counts.added if transfer.status == 'pushing' else transfer.progress }}"></progress>
+  {% endif %}
+
+  {% if transfer.status == 'error' %}
+  <div class="alert error">{{ transfer.error }}</div>
+  {% endif %}
+
+  {% if transfer.total %}
+  <dl class="stats">
+    <div><dt>Songs</dt><dd>{{ transfer.total }}</dd></div>
+    <div class="ok"><dt>Matched</dt><dd>{{ counts.matched }}</dd></div>
+    <div class="warn"><dt>Uncertain</dt><dd>{{ counts.uncertain }}</dd></div>
+    <div class="bad"><dt>Not found</dt><dd>{{ counts.not_found }}</dd></div>
+    <div><dt>Skipped</dt><dd>{{ counts.skipped }}</dd></div>
+    <div class="ok"><dt>On YouTube</dt><dd>{{ counts.added }}</dd></div>
+  </dl>
+  {% endif %}
+
+  <div class="button-row">
+    {% if active %}
+      <form method="post" action="/transfers/{{ transfer.id }}/cancel"><button class="btn ghost">Stop</button></form>
+    {% else %}
+      {% if counts.to_add %}
+      <form method="post" action="/transfers/{{ transfer.id }}/push">
+        <button class="btn primary">
+          {% if transfer.yt_playlist_id %}Add {{ counts.to_add }} song{{ 's' if counts.to_add != 1 }} to YouTube Music
+          {% else %}Create playlist on YouTube Music ({{ counts.to_add }} songs){% endif %}
+        </button>
+      </form>
+      {% endif %}
+      {% if transfer.status in ('error', 'cancelled') %}
+      <form method="post" action="/transfers/{{ transfer.id }}/retry"><button class="btn">Resume</button></form>
+      {% endif %}
+      {% if counts.uncertain + counts.not_found %}
+      <form method="post" action="/transfers/{{ transfer.id }}/retry-unresolved">
+        <button class="btn ghost" title="Search YouTube Music again for songs that were not matched with confidence">Search unresolved again</button>
+      </form>
+      {% endif %}
+      {% if transfer.total %}<a class="btn ghost" href="/transfers/{{ transfer.id }}/export.csv">Export CSV</a>{% endif %}
+      <form method="post" action="/transfers/{{ transfer.id }}/delete" class="push-right">
+        <button class="btn ghost danger" data-confirm="Delete this transfer from spot2ytm? The playlist on YouTube Music is kept.">Delete</button>
+      </form>
+    {% endif %}
+  </div>
+</div>

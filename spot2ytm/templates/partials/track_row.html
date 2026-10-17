@@ -1,0 +1,57 @@
+{%- set cands = t.candidates | fromjson -%}
+{%- set chosen = (cands | selectattr('video_id', 'equalto', t.video_id) | first) if t.video_id else none -%}
+<tr id="track-{{ t.id }}" class="track status-{{ t.status }}">
+  <td class="num muted">{{ t.position + 1 }}</td>
+  <td>
+    <div class="title">{{ t.title }}</div>
+    <div class="muted small">{{ (t.artists | fromjson) | join(', ') }}{% if t.album %} · {{ t.album }}{% endif %}{% if t.duration_ms %} · {{ (t.duration_ms / 1000) | duration }}{% endif %}</div>
+  </td>
+  <td>
+    {% if chosen %}
+      <div class="title">
+        <a href="https://music.youtube.com/watch?v={{ chosen.video_id }}" target="_blank" rel="noopener">{{ chosen.title }}</a>
+        {% if chosen.result_type == 'video' %}<span class="tag">video</span>{% endif %}
+        {% if t.manual %}<span class="tag">your pick</span>{% endif %}
+        {% if t.added %}<span class="tag ok">added</span>{% endif %}
+      </div>
+      <div class="muted small">{{ chosen.artists | join(', ') }}{% if chosen.album %} · {{ chosen.album }}{% endif %}{% if chosen.duration_s %} · {{ chosen.duration_s | duration }}{% endif %}</div>
+    {% elif t.status == 'skipped' %}
+      <span class="muted">Skipped — won't be added</span>
+    {% elif t.status == 'pending' %}
+      <span class="muted">Not searched yet</span>
+    {% else %}
+      <span class="bad-text">No good match found</span>
+      {% if cands %}<div class="muted small">closest: {{ cands[0].title }} · {{ cands[0].artists | join(', ') }}</div>{% endif %}
+    {% endif %}
+  </td>
+  <td class="actions">
+    {% if t.score is not none and t.status != 'skipped' and not t.manual %}
+      {% set pct = (t.score * 100) | round | int %}
+      <span class="score {{ 'ok' if t.score >= MATCH_THRESHOLD else ('warn' if t.score >= 0.55 else 'bad') }}" title="Match confidence">{{ pct }}%</span>
+    {% endif %}
+    {% if t.status == 'uncertain' and t.video_id %}
+      <button class="btn small" hx-post="/tracks/{{ t.id }}/choose" hx-target="#track-{{ t.id }}" hx-swap="outerHTML"
+              hx-vals='{"candidate": {{ chosen | tojson | tojson }}}'>Looks right</button>
+    {% endif %}
+    {% if t.status in ('skipped',) or t.manual %}
+      <button class="btn small ghost" hx-post="/tracks/{{ t.id }}/reset" hx-target="#track-{{ t.id }}" hx-swap="outerHTML">Undo</button>
+    {% endif %}
+    {% if t.status != 'skipped' %}
+      <button class="btn small ghost" hx-post="/tracks/{{ t.id }}/skip" hx-target="#track-{{ t.id }}" hx-swap="outerHTML">Skip</button>
+    {% endif %}
+    {% if t.status != 'pending' %}
+    <details class="picker">
+      <summary class="btn small ghost">{{ 'Change' if t.status == 'matched' else 'Options' }}</summary>
+      <div class="picker-body">
+        {% set results = cands %}{% set q = none %}
+        <div id="results-{{ t.id }}">{% include "partials/search_results.html" %}</div>
+        <form class="search-form" hx-get="/tracks/{{ t.id }}/search" hx-target="#results-{{ t.id }}" hx-indicator="#spin-{{ t.id }}">
+          <input type="search" name="q" placeholder="Search YouTube Music…" aria-label="Search YouTube Music">
+          <button class="btn small">Search</button>
+          <span class="spinner htmx-indicator" id="spin-{{ t.id }}" aria-hidden="true"></span>
+        </form>
+      </div>
+    </details>
+    {% endif %}
+  </td>
+</tr>

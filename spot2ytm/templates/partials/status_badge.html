@@ -1,0 +1,4 @@
+{%- set labels = {
+  'queued': 'Queued', 'fetching': 'Reading Spotify', 'matching': 'Matching', 'review': 'Ready for review',
+  'pushing': 'Adding to YouTube', 'done': 'Done', 'error': 'Error', 'cancelled': 'Cancelled'} -%}
+<span class="badge status-{{ t.status }}">{{ labels.get(t.status, t.status) }}</span>

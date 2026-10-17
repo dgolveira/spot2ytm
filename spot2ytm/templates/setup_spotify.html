@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Spotify setup · spot2ytm{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>Connect Spotify</h1>
+  {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+  <p class="muted">Spotify only lets apps read your playlists through a developer app that <em>you</em> own.
+    It is free and only you will use it. You do this once.</p>
+
+  <ol class="steps">
+    <li>Open the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">Spotify Developer Dashboard</a>
+      and log in. <span class="muted">(The app owner needs Spotify Premium.)</span></li>
+    <li>Click <strong>Create app</strong>. Any name and description will do.</li>
+    <li>In <strong>Redirect URIs</strong>, add exactly:
+      <div class="copy-row">
+        <code id="redirect-uri">{{ redirect_uri }}</code>
+        <button type="button" class="btn ghost small" data-copy="#redirect-uri">Copy</button>
+      </div>
+    </li>
+    <li>Under <strong>Which API/SDKs are you planning to use?</strong> tick <strong>Web API</strong>, accept the terms and save.</li>
+    <li>Open the app's <strong>Settings</strong>, copy the <strong>Client ID</strong> and paste it below.
+      <span class="muted">No client secret is needed.</span></li>
+  </ol>
+
+  <form method="post" action="/setup/spotify" class="stack">
+    <label for="client_id">Client ID</label>
+    <input id="client_id" name="client_id" value="{{ client_id }}" placeholder="e.g. 5f3c9a…" required
+           autocomplete="off" spellcheck="false" pattern="[A-Za-z0-9]{16,}">
+    <button class="btn primary">Save and log in with Spotify</button>
+  </form>
+  <p class="muted small">spot2ytm only asks for read access to your playlists and Liked Songs. It never changes anything on Spotify.</p>
+</section>
+{% endblock %}

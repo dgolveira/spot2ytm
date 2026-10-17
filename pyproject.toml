@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spot2ytm"
+version = "0.1.0"
+description = "Self-hosted web app to copy your Spotify playlists to YouTube Music"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Douglas Oliveira" }]
+keywords = ["spotify", "youtube-music", "playlist", "migration"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Framework :: FastAPI",
+    "Environment :: Web Environment",
+    "Topic :: Multimedia :: Sound/Audio",
+]
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "httpx>=0.27",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+    "rapidfuzz>=3.9",
+    "ytmusicapi>=1.10",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+spot2ytm = "spot2ytm.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/dgolveira/spot2ytm"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

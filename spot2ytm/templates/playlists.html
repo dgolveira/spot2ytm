@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Playlists · spot2ytm{% endblock %}
+{% block content %}
+<form method="post" action="/transfers" id="playlist-form">
+  <div class="toolbar">
+    <h1>Your Spotify playlists</h1>
+    <input type="search" id="playlist-filter" placeholder="Filter…" aria-label="Filter playlists">
+  </div>
+
+  {% set unreadable = playlists | rejectattr('readable') | list %}
+  {% if unreadable %}
+  <div class="alert info">
+    <strong>{{ unreadable | length }} playlist{{ 's' if unreadable | length > 1 }} can't be read.</strong>
+    Since March 2026 Spotify only gives apps the songs of playlists you <em>own or collaborate on</em>.
+    To copy one you only follow, open it in Spotify, select all songs (<kbd>Ctrl</kbd>+<kbd>A</kbd>) and
+    <em>Add to playlist → New playlist</em>, then refresh this page.
+  </div>
+  {% endif %}
+
+  <table class="playlists">
+    <thead>
+      <tr>
+        <th class="check"><input type="checkbox" id="select-all" aria-label="Select all"></th>
+        <th colspan="2">Playlist</th>
+        <th class="num">Songs</th>
+        <th>Last transfer</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in playlists %}
+      {% set last_t = last.get(p.id) %}
+      <tr class="{{ '' if p.readable else 'unreadable' }}" data-name="{{ p.name | lower }}">
+        <td class="check">
+          <input type="checkbox" name="playlist_id" value="{{ p.id }}" id="pl-{{ loop.index }}"
+                 {% if not p.readable or not p.total %}disabled{% endif %}>
+        </td>
+        <td class="cover">
+          {% if p.id == 'liked' %}<span class="cover-placeholder liked">♥</span>
+          {% elif p.image_url %}<img src="{{ p.image_url }}" alt="" loading="lazy">
+          {% else %}<span class="cover-placeholder">♪</span>{% endif %}
+        </td>
+        <td>
+          <label for="pl-{{ loop.index }}" class="title">{{ p.name }}</label>
+          <div class="muted small">
+            {% if p.id == 'liked' %}Your library{% else %}by {{ p.owner_name }}{% endif %}
+            {% if p.collaborative %} · collaborative{% endif %}
+            {% if not p.readable %} · <span class="warn-text">followed only, songs not available</span>{% endif %}
+          </div>
+        </td>
+        <td class="num">{{ p.total }}</td>
+        <td>
+          {% if last_t %}
+            {% with t = last_t %}<a href="/transfers/{{ t.id }}">{% include "partials/status_badge.html" %}</a>{% endwith %}
+            {% if last_t.yt_playlist_id %}<div class="muted small">exporting again only adds new songs</div>{% endif %}
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="action-bar">
+    <div class="options">
+      <label>Privacy on YouTube Music
+        <select name="privacy">
+          {% for opt in privacy_options %}<option value="{{ opt }}">{{ opt | capitalize }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" name="auto_push" value="1" checked>
+        Create the playlist as soon as matching finishes
+        <span class="muted small">Songs you fix during review are then added at the end. Uncheck to review first and keep the original order.</span>
+      </label>
+    </div>
+    <button class="btn primary" id="transfer-btn" disabled>Transfer <span id="selected-count">0</span> playlists</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ transfer.name }} · spot2ytm{% endblock %}
+{% block content %}
+<div class="transfer-head">
+  {% if transfer.image_url %}<img class="cover-lg" src="{{ transfer.image_url }}" alt="">
+  {% elif transfer.spotify_playlist_id == 'liked' %}<span class="cover-lg cover-placeholder liked">♥</span>
+  {% else %}<span class="cover-lg cover-placeholder">♪</span>{% endif %}
+  <div class="grow">
+    <p class="muted small"><a href="/">Dashboard</a> / transfer #{{ transfer.id }}</p>
+    <h1>{{ transfer.name }}</h1>
+    {% include "partials/transfer_status.html" %}
+  </div>
+</div>
+
+{% if not active and transfer.total %}
+<nav class="tabs" aria-label="Filter songs">
+  {% set tabs = [
+    ('review', 'Needs review', counts.uncertain + counts.not_found),
+    ('uncertain', 'Uncertain', counts.uncertain),
+    ('not_found', 'Not found', counts.not_found),
+    ('matched', 'Matched', counts.matched),
+    ('skipped', 'Skipped', counts.skipped),
+    ('all', 'All', transfer.total)] %}
+  {% for key, label, n in tabs %}
+    <a href="?filter={{ key }}" {% if filter == key %}aria-current="page"{% endif %}>{{ label }} <span class="count">{{ n }}</span></a>
+  {% endfor %}
+</nav>
+
+{% if tracks %}
+<table class="tracks">
+  <thead>
+    <tr><th class="num">#</th><th>On Spotify</th><th>On YouTube Music</th><th class="actions"></th></tr>
+  </thead>
+  <tbody>
+    {% for t in tracks %}{% include "partials/track_row.html" %}{% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">
+  {% if filter == 'review' %}🎉 Nothing to review: every song was matched with confidence.{% else %}No songs here.{% endif %}
+</p>
+{% endif %}
+{% endif %}
+{% endblock %}

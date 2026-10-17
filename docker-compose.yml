@@ -1,0 +1,14 @@
+services:
+  spot2ytm:
+    build: .
+    image: spot2ytm
+    container_name: spot2ytm
+    # Bind to localhost only: the app has no login of its own.
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./data:/data
+    env_file:
+      - path: .env
+        required: false
+    restart: unless-stopped

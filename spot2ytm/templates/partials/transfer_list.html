@@ -1,0 +1,28 @@
+{% set any_active = transfers | selectattr('0.status', 'in', active_statuses) | list %}
+<div id="transfer-list"
+     {% if any_active %}hx-get="/partials/transfers" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  {% if not transfers %}
+    <p class="empty">Nothing transferred yet.</p>
+  {% else %}
+  <ul class="transfer-list">
+    {% for t, c in transfers %}
+    <li>
+      <a href="/transfers/{{ t.id }}" class="transfer-item">
+        {% if t.image_url %}<img src="{{ t.image_url }}" alt="" loading="lazy">{% else %}<span class="cover-placeholder">♪</span>{% endif %}
+        <div class="grow">
+          <div class="title">{{ t.name }}</div>
+          <div class="muted small">
+            {{ t.total }} songs
+            {% if t.total %} · {{ c.matched }} matched{% if c.uncertain + c.not_found %} · <span class="warn-text">{{ c.uncertain + c.not_found }} to review</span>{% endif %}{% endif %}
+          </div>
+          {% if t.status in active_statuses and t.total %}
+          <progress max="{{ t.total }}" value="{{ c.added if t.status == 'pushing' else t.progress }}"></progress>
+          {% endif %}
+        </div>
+        {% include "partials/status_badge.html" %}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>

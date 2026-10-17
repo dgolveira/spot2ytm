@@ -1,0 +1,26 @@
+name: Wrong or missing match
+description: A song was matched to the wrong track on YouTube Music, or not found
+labels: [matching]
+body:
+  - type: input
+    id: spotify
+    attributes:
+      label: Spotify track
+      description: Link, or title + artists + duration.
+      placeholder: "https://open.spotify.com/track/..."
+    validations:
+      required: true
+  - type: input
+    id: got
+    attributes:
+      label: What spot2ytm picked (if anything)
+      placeholder: "https://music.youtube.com/watch?v=..."
+  - type: input
+    id: expected
+    attributes:
+      label: The right track on YouTube Music
+      placeholder: "https://music.youtube.com/watch?v=..."
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else?

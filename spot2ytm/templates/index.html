@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Move your Spotify playlists to YouTube Music</h1>
+  <p class="muted">Connect both accounts, pick playlists, review the songs that could not be matched with confidence, done.</p>
+</section>
+
+<section class="cards">
+  <article class="card {{ 'connected' if spotify_user else '' }}">
+    <div class="card-head">
+      <span class="logo spotify" aria-hidden="true"></span>
+      <h2>1 · Spotify</h2>
+    </div>
+    {% if spotify_user %}
+      <p>Connected as <strong>{{ spotify_user.display_name or spotify_user.id }}</strong></p>
+      <form method="post" action="/auth/spotify/disconnect"><button class="btn ghost small">Disconnect</button></form>
+    {% elif spotify_connected and spotify_error %}
+      <p class="error-text">Connected, but Spotify returned an error: {{ spotify_error }}</p>
+      <a class="btn" href="/auth/spotify/login">Reconnect</a>
+    {% elif client_id_set %}
+      <p class="muted">Your app is configured. Log in to allow read-only access to your playlists.</p>
+      <a class="btn" href="/auth/spotify/login">Connect Spotify</a>
+      <a class="link small" href="/setup/spotify">Change client ID</a>
+    {% else %}
+      <p class="muted">You need a free Spotify developer app (takes ~2 minutes).</p>
+      <a class="btn" href="/setup/spotify">Set up Spotify</a>
+    {% endif %}
+  </article>
+
+  <article class="card {{ 'connected' if yt_account else '' }}">
+    <div class="card-head">
+      <span class="logo ytm" aria-hidden="true"></span>
+      <h2>2 · YouTube Music</h2>
+    </div>
+    {% if yt_account %}
+      <p>Connected as <strong>{{ yt_account.accountName }}</strong>{% if yt_account.channelHandle %} <span class="muted">{{ yt_account.channelHandle }}</span>{% endif %}</p>
+      <form method="post" action="/auth/ytmusic/disconnect"><button class="btn ghost small">Disconnect</button></form>
+    {% else %}
+      <p class="muted">Paste the request headers of your logged-in browser session.</p>
+      <a class="btn" href="/setup/ytmusic">Connect YouTube Music</a>
+    {% endif %}
+  </article>
+
+  <article class="card {{ '' if spotify_user and yt_account else 'disabled' }}">
+    <div class="card-head">
+      <span class="logo go" aria-hidden="true"></span>
+      <h2>3 · Transfer</h2>
+    </div>
+    <p class="muted">Choose which playlists to copy. Your Liked Songs can be copied too.</p>
+    {% if spotify_user and yt_account %}
+      <a class="btn primary" href="/playlists">Choose playlists</a>
+    {% else %}
+      <span class="btn disabled" aria-disabled="true">Connect both accounts first</span>
+    {% endif %}
+  </article>
+</section>
+
+<section>
+  <h2 class="section-title">Transfers</h2>
+  {% include "partials/transfer_list.html" %}
+</section>
+{% endblock %}
