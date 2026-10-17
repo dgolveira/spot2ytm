@@ -12,12 +12,12 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-your%20data%20stays%20local-1db954)](SECURITY.md)
 
-[Features](#-features) ·
-[Quick start](#-quick-start) ·
-[Setup](#-connecting-your-accounts) ·
-[How it works](#-how-matching-works) ·
-[FAQ](#-faq) ·
-[🇧🇷 Leia em português](README.pt-BR.md)
+[Features](#features) ·
+[Quick start](#quick-start) ·
+[Setup](#connecting-your-accounts) ·
+[How it works](#how-matching-works) ·
+[FAQ](#faq) ·
+[Leia em português](README.pt-BR.md)
 
 <br>
 
@@ -30,19 +30,19 @@
 
 ---
 
-## ✨ Features
+## Features
 
-- 🎧 **All your playlists**: the ones you created, the ones you collaborate on, and your **Liked Songs**.
-- 🧠 **Smart matching**: compares title, artists, duration and *version*, so you get the studio recording instead of a live take, a karaoke or a sped-up edit.
-- 🔍 **Review screen**: confident matches go straight in. Uncertain ones are shown side by side with alternatives, and you can accept, pick another version, search by hand or skip.
-- 🔁 **Re-export safely**: exporting the same playlist again only adds the new songs to the same YouTube Music playlist. No duplicates.
-- 💾 **Remembers everything**: a local match cache means a song is searched once, and your manual choices are reused in every playlist.
+- **All your playlists**: the ones you created, the ones you collaborate on, and your **Liked Songs**.
+- **Smart matching**: compares title, artists, duration and *version*, so you get the studio recording instead of a live take, a karaoke or a sped-up edit.
+- **Review screen**: confident matches go straight in. Uncertain ones are shown side by side with alternatives, and you can accept, pick another version, search by hand or skip.
+- **Re-export safely**: exporting the same playlist again only adds the new songs to the same YouTube Music playlist. No duplicates.
+- **Remembers everything**: a local match cache means a song is searched once, and your manual choices are reused in every playlist.
 - ⏯️ **Resumable**: transfers run in the background. Close the app halfway and it picks up where it stopped.
-- 📄 **CSV export** of every transfer, including what was not found.
-- 🔒 **Private by design**: runs on your machine, Spotify access is read-only, nothing goes to third-party servers.
-- 🌗 Light and dark themes, works on mobile.
+- **CSV export** of every transfer, including what was not found.
+- **Private by design**: runs on your machine, Spotify access is read-only, nothing goes to third-party servers.
+- Light and dark themes, works on mobile.
 
-## 📸 Screenshots
+## Screenshots
 
 <table>
   <tr>
@@ -63,7 +63,7 @@
   </tr>
 </table>
 
-## 🚀 Quick start
+## Quick start
 
 ### Option A: Python (3.11+)
 
@@ -92,7 +92,7 @@ Then open **http://127.0.0.1:8000**. Your data is kept in `./data`.
 > Use `127.0.0.1`, **not** `localhost`, in the Spotify redirect URI below.
 > Spotify rejects `localhost` redirect addresses and only accepts loopback ones written as an IP.
 
-## 🔑 Connecting your accounts
+## Connecting your accounts
 
 You do this once. Both steps are explained on screen, too.
 
@@ -132,7 +132,7 @@ The headers last as long as that browser session (they become invalid if you log
 
 Open **Playlists**, tick the ones you want, choose the privacy for the new playlists (private by default) and click **Transfer**.
 
-## 🧠 How matching works
+## How matching works
 
 ```mermaid
 flowchart LR
@@ -162,7 +162,7 @@ Each candidate gets a score from 0 to 100%:
 
 Official audio tracks are preferred over music videos when both exist.
 
-## ⚙️ Configuration
+## Configuration
 
 Everything works out of the box. To change something, copy [`.env.example`](.env.example) to `.env`:
 
@@ -180,7 +180,7 @@ Command line options: `spot2ytm --port 9000 --no-browser`.
 
 If you change the port, register the matching redirect URI (`http://127.0.0.1:9000/auth/spotify/callback`) in your Spotify app.
 
-## ❓ FAQ
+## FAQ
 
 <details>
 <summary><b>Some of my playlists say "followed only, songs not available"</b></summary>
@@ -230,7 +230,7 @@ The redirect URI in your Spotify app must be **exactly** the one shown on spot2y
 It is not designed for that: it has no login of its own and holds the credentials of one person. Keep it on your machine. See [SECURITY.md](SECURITY.md).
 </details>
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 spot2ytm/
@@ -246,7 +246,7 @@ spot2ytm/
 
 Built with [FastAPI](https://fastapi.tiangolo.com/), [htmx](https://htmx.org/), [ytmusicapi](https://github.com/sigma67/ytmusicapi), [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz) and SQLite. No JavaScript build step, no external services.
 
-## 🧪 Development
+## Development
 
 ```bash
 pip install -e ".[dev]"
@@ -255,7 +255,7 @@ pytest
 
 The tests use in-memory fakes for both services, so they run offline in under a second. See [CONTRIBUTING.md](CONTRIBUTING.md) for the details.
 
-## 🔒 Security
+## Security
 
 - Listens on `127.0.0.1` only, rejects unknown `Host` headers and cross-site form posts.
 - Spotify: OAuth with PKCE, read-only scopes, no client secret stored.
@@ -264,13 +264,13 @@ The tests use in-memory fakes for both services, so they run offline in under a 
 
 Found a vulnerability? Please report it privately, as described in [SECURITY.md](SECURITY.md).
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome, especially cases where the matcher picks the wrong song. Open an issue with the
 [wrong match template](https://github.com/dgolveira/spot2ytm/issues/new?template=wrong_match.yml) or read
 [CONTRIBUTING.md](CONTRIBUTING.md) to send a pull request.
 
-## 📜 License
+## License
 
 [MIT](LICENSE) © Douglas Oliveira. Third-party components are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 

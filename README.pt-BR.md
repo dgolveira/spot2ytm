@@ -11,12 +11,12 @@
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green.svg)](LICENSE)
 
-[Recursos](#-recursos) ·
-[Começando](#-começando) ·
-[Configurar contas](#-conectando-suas-contas) ·
-[Como funciona](#-como-a-correspondência-funciona) ·
-[Dúvidas](#-dúvidas-frequentes) ·
-[🇺🇸 Read in English](README.md)
+[Recursos](#recursos) ·
+[Começando](#começando) ·
+[Configurar contas](#conectando-suas-contas) ·
+[Como funciona](#como-a-correspondência-funciona) ·
+[Dúvidas](#dúvidas-frequentes) ·
+[Read in English](README.md)
 
 <br>
 
@@ -29,19 +29,19 @@
 
 ---
 
-## ✨ Recursos
+## Recursos
 
-- 🎧 **Todas as suas playlists**: as que você criou, as colaborativas e as suas **Músicas Curtidas**.
-- 🧠 **Correspondência inteligente**: compara título, artistas, duração e *versão*. Você recebe a gravação de estúdio, e não a ao vivo, o karaokê ou a versão acelerada.
-- 🔍 **Tela de revisão**: o que tem alta confiança entra direto. O que é duvidoso aparece lado a lado com alternativas, e você aceita, escolhe outra versão, busca na mão ou pula.
-- 🔁 **Exportar de novo sem medo**: exportar a mesma playlist outra vez só adiciona as músicas novas na mesma playlist do YouTube Music. Sem duplicatas.
-- 💾 **Lembra de tudo**: com o cache local, cada música é buscada uma vez só, e suas escolhas manuais valem para todas as playlists.
+- **Todas as suas playlists**: as que você criou, as colaborativas e as suas **Músicas Curtidas**.
+- **Correspondência inteligente**: compara título, artistas, duração e *versão*. Você recebe a gravação de estúdio, e não a ao vivo, o karaokê ou a versão acelerada.
+- **Tela de revisão**: o que tem alta confiança entra direto. O que é duvidoso aparece lado a lado com alternativas, e você aceita, escolhe outra versão, busca na mão ou pula.
+- **Exportar de novo sem medo**: exportar a mesma playlist outra vez só adiciona as músicas novas na mesma playlist do YouTube Music. Sem duplicatas.
+- **Lembra de tudo**: com o cache local, cada música é buscada uma vez só, e suas escolhas manuais valem para todas as playlists.
 - ⏯️ **Retomável**: as transferências rodam em segundo plano. Se fechar o app no meio, ele continua de onde parou.
-- 📄 **Exportação em CSV** de cada transferência, incluindo o que não foi encontrado.
-- 🔒 **Privado**: roda na sua máquina, o acesso ao Spotify é só leitura e nada passa por servidores de terceiros.
-- 🌗 Tema claro e escuro, e funciona no celular.
+- **Exportação em CSV** de cada transferência, incluindo o que não foi encontrado.
+- **Privado**: roda na sua máquina, o acesso ao Spotify é só leitura e nada passa por servidores de terceiros.
+- Tema claro e escuro, e funciona no celular.
 
-## 📸 Telas
+## Telas
 
 <table>
   <tr>
@@ -62,7 +62,7 @@
   </tr>
 </table>
 
-## 🚀 Começando
+## Começando
 
 ### Opção A: Python (3.11+)
 
@@ -91,7 +91,7 @@ Depois abra **http://127.0.0.1:8000**. Os dados ficam em `./data`.
 > Na redirect URI do Spotify, use `127.0.0.1`, **e não** `localhost`.
 > O Spotify recusa `localhost` e só aceita endereços locais escritos como IP.
 
-## 🔑 Conectando suas contas
+## Conectando suas contas
 
 Você faz isso uma vez só, e a própria tela explica cada passo.
 
@@ -131,7 +131,7 @@ Os cabeçalhos valem enquanto durar a sessão do navegador. Se você sair da con
 
 Abra **Playlists**, marque as que quiser, escolha a privacidade das novas playlists (privada por padrão) e clique em **Transfer**.
 
-## 🧠 Como a correspondência funciona
+## Como a correspondência funciona
 
 ```mermaid
 flowchart LR
@@ -159,7 +159,7 @@ flowchart LR
 
 Quando existem as duas opções, o áudio oficial tem preferência sobre o videoclipe.
 
-## ⚙️ Configuração
+## Configuração
 
 Funciona sem configurar nada. Se quiser mudar algo, copie o [`.env.example`](.env.example) para `.env`:
 
@@ -173,7 +173,7 @@ Funciona sem configurar nada. Se quiser mudar algo, copie o [`.env.example`](.en
 | `SPOT2YTM_ALLOWED_HOSTS` | | Nomes de `Host` extras aceitos, separados por vírgula |
 | `SPOT2YTM_SEARCH_DELAY` | `0.2` | Pausa entre buscas no YouTube Music, em segundos |
 
-## ❓ Dúvidas frequentes
+## Dúvidas frequentes
 
 <details>
 <summary><b>Algumas playlists aparecem como "followed only, songs not available"</b></summary>
@@ -211,13 +211,13 @@ Sim, para tudo que é adicionado de uma vez. Se a opção *Create the playlist a
 Não foi feito para isso: não tem login próprio e guarda as credenciais de uma pessoa. Deixe na sua máquina. Veja o [SECURITY.md](SECURITY.md).
 </details>
 
-## 🤝 Contribuindo
+## Contribuindo
 
 Contribuições são bem-vindas, principalmente casos em que a música errada foi escolhida. Abra uma issue com o
 [modelo de correspondência errada](https://github.com/dgolveira/spot2ytm/issues/new?template=wrong_match.yml) ou leia o
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## 📜 Licença
+## Licença
 
 [MIT](LICENSE) © Douglas Oliveira. Os componentes de terceiros estão listados em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
