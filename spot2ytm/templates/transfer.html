@@ -3,8 +3,8 @@
 {% block content %}
 <div class="transfer-head">
   {% if transfer.image_url %}<img class="cover-lg" src="{{ transfer.image_url }}" alt="">
-  {% elif transfer.spotify_playlist_id == 'liked' %}<span class="cover-lg cover-placeholder liked">♥</span>
-  {% else %}<span class="cover-lg cover-placeholder">♪</span>{% endif %}
+  {% elif transfer.spotify_playlist_id == 'liked' %}<span class="cover-lg cover-placeholder liked" aria-hidden="true"></span>
+  {% else %}<span class="cover-lg cover-placeholder" aria-hidden="true"></span>{% endif %}
   <div class="grow">
     <p class="muted small"><a href="/">Dashboard</a> / transfer #{{ transfer.id }}</p>
     <h1>{{ transfer.name }}</h1>
@@ -45,7 +45,7 @@
 </table>
 {% else %}
 <p class="empty">
-  {% if filter == 'review' %}🎉 Nothing to review: every song was matched with confidence.{% else %}No songs here.{% endif %}
+  {% if filter == 'review' %}Nothing to review: every song was matched with confidence.{% else %}No songs here.{% endif %}
 </p>
 {% endif %}
 {% endif %}

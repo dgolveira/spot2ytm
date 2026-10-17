@@ -35,9 +35,9 @@
                  {% if not p.readable or not p.total %}disabled{% endif %}>
         </td>
         <td class="cover">
-          {% if p.id == 'liked' %}<span class="cover-placeholder liked">♥</span>
+          {% if p.id == 'liked' %}<span class="cover-placeholder liked" aria-hidden="true"></span>
           {% elif p.image_url %}<img src="{{ p.image_url }}" alt="" loading="lazy">
-          {% else %}<span class="cover-placeholder">♪</span>{% endif %}
+          {% else %}<span class="cover-placeholder" aria-hidden="true"></span>{% endif %}
         </td>
         <td>
           <label for="pl-{{ loop.index }}" class="title">{{ p.name }}</label>

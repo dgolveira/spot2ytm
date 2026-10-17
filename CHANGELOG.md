@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- New look: warm monochrome palette, Instrument Serif headings with Geist Sans and Geist Mono
+  (bundled, no external requests), flat 1px-bordered surfaces, black primary buttons, pastel
+  status tags and subtle entry motion. Fixed horizontal scrolling on phones.
+
 - Logs are JSON lines in pino's format (levels, fields and error serializer), on stdout and in
   `data/spot2ytm.log`, with every request and every matched song. Set the level with
   `SPOT2YTM_LOG_LEVEL`/`LOG_LEVEL` or `--log-level`.

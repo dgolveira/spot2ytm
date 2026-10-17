@@ -25,6 +25,15 @@ IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING
 OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ```
 
+## Fonts (bundled in `spot2ytm/static/fonts/`)
+
+| Font | License |
+|---|---|
+| [Instrument Serif](https://github.com/Instrument/instrument-serif) | SIL Open Font License 1.1 |
+| [Geist Sans and Geist Mono](https://github.com/vercel/geist-font) | SIL Open Font License 1.1 |
+
+Files taken from the [Fontsource](https://fontsource.org) packages (Latin subset).
+
 ## Installed as dependencies (not redistributed here)
 
 | Package | License |

@@ -8,7 +8,7 @@
     {% for t, c in transfers %}
     <li>
       <a href="/transfers/{{ t.id }}" class="transfer-item">
-        {% if t.image_url %}<img src="{{ t.image_url }}" alt="" loading="lazy">{% else %}<span class="cover-placeholder">♪</span>{% endif %}
+        {% if t.image_url %}<img src="{{ t.image_url }}" alt="" loading="lazy">{% else %}<span class="cover-placeholder" aria-hidden="true"></span>{% endif %}
         <div class="grow">
           <div class="title">{{ t.name }}</div>
           <div class="muted small">

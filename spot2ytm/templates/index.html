@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="hero">
-  <h1>Move your Spotify playlists to YouTube Music</h1>
+  <h1>Your Spotify playlists, on YouTube Music.</h1>
   <p class="muted">Bring your playlists over, check the songs that were found, then confirm. Nothing is created on YouTube Music before you do.</p>
 </section>
 
@@ -9,7 +9,7 @@
   <article class="card {{ 'connected' if spotify_user else '' }}">
     <div class="card-head">
       <span class="logo spotify" aria-hidden="true"></span>
-      <h2>1 · Spotify</h2>
+      <h2>Spotify</h2>
     </div>
     {% if spotify_user %}
       <p>Connected as <strong>{{ spotify_user.display_name or spotify_user.id }}</strong></p>
@@ -33,7 +33,7 @@
   <article class="card {{ 'connected' if yt_account else '' }}">
     <div class="card-head">
       <span class="logo ytm" aria-hidden="true"></span>
-      <h2>2 · YouTube Music</h2>
+      <h2>YouTube Music</h2>
     </div>
     {% if yt_account %}
       <p>Connected as <strong>{{ yt_account.accountName }}</strong>{% if yt_account.channelHandle %} <span class="muted">{{ yt_account.channelHandle }}</span>{% endif %}</p>
@@ -47,7 +47,7 @@
   <article class="card {{ '' if yt_account else 'disabled' }}">
     <div class="card-head">
       <span class="logo go" aria-hidden="true"></span>
-      <h2>3 · Transfer</h2>
+      <h2>Transfer</h2>
     </div>
     <p class="muted">Choose the playlists, including your Liked Songs. You review the songs before anything is created.</p>
     {% if spotify_user and yt_account %}
