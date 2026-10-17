@@ -154,3 +154,10 @@ def test_isrc_is_searched_first_and_only_its_top_result_kept(store):
     assert status == "matched" and best.video_id == "v-exact"
     assert yt.searches == [("GBAAA9500001", "songs")]  # confident after one search
     assert [c.video_id for c in candidates] == ["v-exact"]
+
+
+def test_key_for_name_ignores_case_and_underscores(store):
+    tid = store.create_transfer("public:playlist:abc", "Dark_Metal", "", None, "PRIVATE", True)
+    assert store.key_for_name("dark  metal") == "public:playlist:abc"
+    assert store.key_for_name("Darker Metal") is None
+    assert tid

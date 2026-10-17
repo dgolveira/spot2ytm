@@ -43,6 +43,8 @@ def split_artists(value: str) -> list[str]:
 def name_from_filename(filename: str) -> str:
     """Exportify file names are the playlist name, lowercased, with "_" for spaces."""
     stem = PurePosixPath(filename).stem
+    if stem.lower() == "liked":  # Exportify's name for Liked Songs
+        return "Liked Songs"
     name = re.sub(r"_+", " ", stem).strip()
     return name[:1].upper() + name[1:] if name else "Imported from Spotify"
 

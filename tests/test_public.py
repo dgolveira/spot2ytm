@@ -152,6 +152,7 @@ def test_parse_exportify_csv_and_zip():
     playlists = parse_files([("spotify_playlists.zip", buf.getvalue()), ("dark_metal.csv", liked.encode())])
 
     assert [p.name for p in playlists] == ["Liked songs", "Dark metal"]
+    assert parse_files([("liked.csv", liked.encode())])[0].name == "Liked Songs"
     first, local = playlists[0].tracks
     assert (first.title, first.artists, first.album, first.duration_ms, first.spotify_id, first.isrc) == (
         "Wonderwall", ["Oasis"], "(What's The Story)", 258000, WONDERWALL, "GBAAA")

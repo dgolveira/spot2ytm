@@ -154,12 +154,16 @@ class Store:
         return {r["spotify_playlist_id"]: r for r in rows}
 
     def key_for_name(self, name: str) -> str | None:
-        """Source id of the latest transfer with this name, to export into the same playlist."""
-        row = self._conn().execute(
-            "SELECT spotify_playlist_id FROM transfers WHERE lower(name) = lower(?) ORDER BY id DESC LIMIT 1",
-            (name,),
-        ).fetchone()
-        return row["spotify_playlist_id"] if row else None
+        """Source id of the latest transfer with this name, to export into the same playlist.
+
+        Case, "_" and repeated spaces are ignored: Exportify turns "Dark_Metal"
+        and "Dark Metal" into the same file name.
+        """
+        wanted = normalize_name(name)
+        for row in self._conn().execute("SELECT name, spotify_playlist_id FROM transfers ORDER BY id DESC"):
+            if normalize_name(row["name"]) == wanted:
+                return row["spotify_playlist_id"]
+        return None
 
     def link_playlist(self, spotify_playlist_id: str, yt_playlist_id: str) -> None:
         with self.tx() as conn:
@@ -266,6 +270,10 @@ class Store:
     def forget_match(self, cache_key: str) -> None:
         with self.tx() as conn:
             conn.execute("DELETE FROM match_cache WHERE cache_key = ?", (cache_key,))
+
+
+def normalize_name(name: str) -> str:
+    return " ".join(name.replace("_", " ").casefold().split())
 
 
 def row_track(row: sqlite3.Row) -> Track:
