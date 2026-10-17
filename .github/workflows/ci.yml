@@ -34,7 +34,9 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install . pip-audit
-      - run: pip-audit --strict --desc
+      # Audit the installed dependencies, leaving out spot2ytm itself (not on PyPI).
+      - run: pip freeze --exclude spot2ytm > requirements-audit.txt
+      - run: pip-audit --strict --desc on --no-deps --disable-pip -r requirements-audit.txt
 
   docker:
     name: Docker image builds
