@@ -38,6 +38,7 @@
 - **Review screen**: confident matches go straight in. Uncertain ones are shown side by side with alternatives, and you can accept, pick another version, search by hand or skip.
 - **Re-export safely**: exporting the same playlist again only adds the new songs to the same YouTube Music playlist. No duplicates.
 - **Remembers everything**: a local match cache means a song is searched once, and your manual choices are reused in every playlist.
+- **Live progress**: while it works, the transfer page shows the song being searched, which search it is trying (ISRC, title and artist, videos), the last songs with what was found and the time left.
 - **Resumable**: transfers run in the background. Close the app halfway and it picks up where it stopped.
 - **CSV export** of every transfer, including what was not found.
 - **Private by design**: runs on your machine, Spotify access is read-only, nothing goes to third-party servers.

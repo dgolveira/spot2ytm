@@ -161,3 +161,29 @@ def test_key_for_name_ignores_case_and_underscores(store):
     assert store.key_for_name("dark  metal") == "public:playlist:abc"
     assert store.key_for_name("Darker Metal") is None
     assert tid
+
+
+def test_live_activity_while_matching(store):
+    worker, yt, tid = make(store, auto_push=False)
+    seen = []
+    search = yt.search
+
+    def watching_search(query, filter="songs", limit=10):
+        seen.append(worker.activity(tid))
+        return search(query, filter, limit)
+
+    yt.search = watching_search
+    worker.run_once(tid)
+
+    first = seen[0]
+    assert first["phase"] == "matching" and first["total"] == 4
+    assert first["song"]["title"] == "Wonderwall - Remastered"
+    assert first["step"] == {"kind": "songs", "query": "Oasis Wonderwall"}
+    # Songs already searched show up newest first, with what was found.
+    titles = [r["title"] for r in seen[-1]["recent"]]
+    assert titles.index("Champagne Supernova") < titles.index("Wonderwall - Remastered")
+    wonderwall = seen[-1]["recent"][titles.index("Wonderwall - Remastered")]
+    assert wonderwall["match"]["title"] == "Wonderwall" and wonderwall["via"] == "songs"
+    assert wonderwall["status"] == "matched"
+    # Gone once the worker moves on.
+    assert worker.activity(tid) is None

@@ -24,6 +24,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Live view on the transfer page: the song being searched and the exact search being tried
+  (ISRC, title and artist, videos), the last songs with what was found and the confidence,
+  speed and time left, a progress bar split by result and a level-meter animation.
 - Import without a Spotify login, for Spotify Free accounts: paste a public playlist or album link
   (first 100 songs) or the song links copied from the Spotify app (no limit, works for Liked Songs).
 - Import the .csv/.zip files saved by Exportify (every playlist and Liked Songs, on Spotify Free too),

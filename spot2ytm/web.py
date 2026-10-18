@@ -49,6 +49,17 @@ def fmt_duration(seconds: float | int | None) -> str:
     return f"{seconds // 60}:{seconds % 60:02d}"
 
 
+def fmt_eta(seconds: float | None) -> str:
+    if seconds is None:
+        return ""
+    if seconds < 60:
+        return "less than a minute left"
+    minutes = round(seconds / 60)
+    if minutes < 60:
+        return f"about {minutes} min left"
+    return f"about {minutes // 60} h {minutes % 60:02d} min left"
+
+
 def create_app(
     settings: Settings | None = None,
     spotify: SpotifyClient | None = None,
@@ -96,7 +107,7 @@ def create_app(
             log.exception("request errored", extra={"req": req, "responseTime": timer.ms})
             raise
         path = request.url.path
-        quiet = path.startswith("/static/") or path.endswith("/status") or path == "/partials/transfers"
+        quiet = path.startswith("/static/") or path.endswith(("/status", "/activity")) or path == "/partials/transfers"
         status = response.status_code
         level = logging.ERROR if status >= 500 else logging.WARNING if status >= 400 else (
             logging.DEBUG if quiet else logging.INFO)
@@ -115,6 +126,7 @@ def create_app(
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
     templates = Jinja2Templates(directory=HERE / "templates")
     templates.env.filters["duration"] = fmt_duration
+    templates.env.filters["eta"] = fmt_eta
     templates.env.filters["fromjson"] = json.loads
     templates.env.globals["version"] = __version__
     templates.env.globals["MATCH_THRESHOLD"] = matching.MATCH_THRESHOLD
@@ -412,8 +424,17 @@ def create_app(
             filter=filter,
             tracks=store.tracks(transfer_id, TRACK_FILTERS[filter]),
             active=transfer["status"] in ACTIVE_STATUSES,
+            activity=worker.activity(transfer_id),
             yt_url=YTMusicClient.playlist_url(transfer["yt_playlist_id"]) if transfer["yt_playlist_id"] else None,
         )
+
+    @app.get("/transfers/{transfer_id}/activity", response_class=HTMLResponse)
+    def transfer_activity(request: Request, transfer_id: int):
+        transfer = transfer_or_404(transfer_id)
+        if transfer["status"] not in ACTIVE_STATUSES:
+            return HTMLResponse("", status_code=286)  # htmx: stop polling
+        return render(request, "partials/transfer_activity.html",
+                      transfer=transfer, activity=worker.activity(transfer_id))
 
     @app.get("/transfers/{transfer_id}/status", response_class=HTMLResponse)
     def transfer_status(request: Request, transfer_id: int, was: str = ""):

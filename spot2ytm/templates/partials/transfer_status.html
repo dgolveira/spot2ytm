@@ -13,8 +13,21 @@
   </div>
 
   {% if active and transfer.total %}
-  <progress max="{{ counts.matched if transfer.status == 'pushing' else transfer.total }}"
-            value="{{ counts.added if transfer.status == 'pushing' else transfer.progress }}"></progress>
+  {#- Segments keep their ids between polls, so htmx settles the new widths with a transition. -#}
+  {% if transfer.status == 'matching' %}
+    {% set segments = [('ok', counts.matched), ('warn', counts.uncertain), ('bad', counts.not_found), ('skip', counts.skipped)] %}
+    {% set of, value = transfer.total, transfer.progress %}
+  {% elif transfer.status == 'pushing' %}
+    {% set segments = [('ok', counts.added)] %}
+    {% set of, value = counts.matched, counts.added %}
+  {% else %}
+    {% set segments = [('ok', transfer.progress)] %}
+    {% set of, value = transfer.total, transfer.progress %}
+  {% endif %}
+  <div class="meter" role="progressbar" aria-label="Progress" aria-valuemin="0" aria-valuemax="{{ of }}" aria-valuenow="{{ value }}">
+    {% for cls, n in segments %}<span id="meter-{{ cls }}" class="{{ cls }}" style="width: {{ (n / of * 100) | round(2) if of else 0 }}%"></span>{% endfor %}
+    <span class="meter-pct">{{ ((value / of * 100) | round | int) if of else 0 }}%</span>
+  </div>
   {% endif %}
 
   {% if transfer.status == 'error' %}

@@ -37,6 +37,7 @@
 - **Tela de revisão**: o que tem alta confiança entra direto. O que é duvidoso aparece lado a lado com alternativas, e você aceita, escolhe outra versão, busca na mão ou pula.
 - **Exportar de novo sem medo**: exportar a mesma playlist outra vez só adiciona as músicas novas na mesma playlist do YouTube Music. Sem duplicatas.
 - **Lembra de tudo**: com o cache local, cada música é buscada uma vez só, e suas escolhas manuais valem para todas as playlists.
+- **Progresso ao vivo**: enquanto trabalha, a página da transferência mostra a música que está sendo buscada, qual busca está sendo tentada (ISRC, título e artista, vídeos), as últimas músicas com o que foi encontrado e o tempo restante.
 - **Retomável**: as transferências rodam em segundo plano. Se fechar o app no meio, ele continua de onde parou.
 - **Exportação em CSV** de cada transferência, incluindo o que não foi encontrado.
 - **Privado**: roda na sua máquina, o acesso ao Spotify é só leitura e nada passa por servidores de terceiros.

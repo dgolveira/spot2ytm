@@ -1,0 +1,74 @@
+{%- set via_labels = {
+  'isrc': 'ISRC', 'songs': 'Title + artist', 'videos': 'Videos',
+  'spotify': 'Spotify', 'create': 'New playlist', 'add': 'Adding songs'} -%}
+{%- set via_text = {'isrc': 'by ISRC', 'songs': 'by title and artist', 'videos': 'among videos', 'cache': 'searched before'} -%}
+{%- set status_labels = {'matched': 'Matched', 'uncertain': 'Uncertain', 'not_found': 'Not found'} -%}
+{%- set status_class = {'matched': 'ok', 'uncertain': 'warn', 'not_found': 'bad'} -%}
+{% set a = activity %}
+<div class="activity-top">
+  <p class="activity-title">
+    {% if not a %}
+      {% if transfer.status == 'queued' %}Waiting for other transfers to finish{% else %}Starting{% endif %}
+    {% elif a.phase == 'fetching' %}Reading songs from Spotify
+    {% elif a.phase == 'pushing' %}Writing to YouTube Music
+    {% else %}Searching YouTube Music{% endif %}
+  </p>
+  {% if a and a.rate %}
+  <p class="activity-pace">{{ '%.1f' | format(a.rate) }} songs/s · {{ a.eta | eta }}</p>
+  {% endif %}
+</div>
+
+{% if a and a.phase == 'matching' %}
+<div class="now">
+  {% if a.song %}
+  <span class="now-pos">{{ a.song.position }}<span class="muted"> / {{ a.total }}</span></span>
+  <div class="now-song">
+    <strong>{{ a.song.title }}</strong>
+    <span class="muted">{{ a.song.artists | join(', ') }}</span>
+  </div>
+  {% if a.step %}
+  <div class="now-step">
+    <span class="badge">{{ via_labels.get(a.step.kind, a.step.kind) }}</span>
+    <code>{{ a.step.query }}</code>
+  </div>
+  {% endif %}
+  {% else %}
+  <span class="muted">Picking the next song…</span>
+  {% endif %}
+</div>
+{% elif a and a.step %}
+<div class="now">
+  <div class="now-step">
+    <span class="badge">{{ via_labels.get(a.step.kind, a.step.kind) }}</span>
+    <code>{{ a.step.query }}</code>
+  </div>
+</div>
+{% endif %}
+
+{% if a and a.recent %}
+<ol class="feed" aria-label="Last songs searched">
+  {% for r in a.recent %}
+  <li class="feed-row s-{{ r.status }}" data-pos="{{ r.position }}">
+    <span class="feed-pos">{{ r.position }}</span>
+    <div class="feed-song">
+      <strong>{{ r.title }}</strong>
+      <span class="muted">{{ r.artists | join(', ') }}</span>
+    </div>
+    <div class="feed-match">
+      {% if r.match %}
+      <span class="feed-arrow" aria-hidden="true"></span>
+      <div>
+        <strong>{{ r.match.title }}</strong>
+        <span class="muted">{{ r.match.artists | join(', ') }}{% if r.match.type == 'video' %} · video{% endif %}{% if r.via %} · {{ via_text.get(r.via, r.via) }}{% endif %}</span>
+      </div>
+      {% else %}
+      <span class="muted">Nothing close enough on YouTube Music</span>
+      {% endif %}
+    </div>
+    <span class="tag {{ status_class.get(r.status, '') }}" title="Match confidence">
+      {%- if r.score is not none and r.status != 'not_found' %}{{ (r.score * 100) | round | int }}%{% else %}{{ status_labels.get(r.status, r.status) }}{% endif -%}
+    </span>
+  </li>
+  {% endfor %}
+</ol>
+{% endif %}

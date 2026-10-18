@@ -51,6 +51,31 @@ def test_transfer_flow_and_review(app_and_client):
     assert csv.status_code == 200 and "Wonderwall" in csv.text
 
 
+def test_live_activity_partial(app_and_client):
+    from spot2ytm.jobs import Activity
+
+    app, client = app_and_client
+    tid = int(client.post("/transfers", data={"playlist_id": "p1"}, follow_redirects=False)
+              .headers["location"].rsplit("/", 1)[1])
+    activity = Activity("matching", 0, 2)
+    activity.finish_song({"position": 1, "title": "Wonderwall", "artists": ["Oasis"], "status": "matched",
+                          "score": 0.97, "via": "isrc",
+                          "match": {"title": "Wonderwall", "artists": ["Oasis"], "type": "song"}})
+    activity.update(song={"position": 2, "title": "Hurt", "artists": ["Johnny Cash"]},
+                    step={"kind": "isrc", "query": "USUM70210590"})
+    app.state.worker._activity[tid] = activity
+    app.state.store.update_transfer(tid, status="matching")
+
+    page = client.get(f"/transfers/{tid}/activity")
+    assert page.status_code == 200
+    assert "Searching YouTube Music" in page.text and "USUM70210590" in page.text
+    assert "97%" in page.text and "by ISRC" in page.text
+    assert 'class="eq"' in client.get(f"/transfers/{tid}").text
+
+    app.state.store.update_transfer(tid, status="review")
+    assert client.get(f"/transfers/{tid}/activity").status_code == 286
+
+
 def test_search_partial(app_and_client):
     app, client = app_and_client
     resp = client.post("/transfers", data={"playlist_id": "p1"}, follow_redirects=False)

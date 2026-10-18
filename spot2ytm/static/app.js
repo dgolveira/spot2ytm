@@ -75,3 +75,16 @@ document.querySelectorAll("[data-tabs]").forEach((tabs) => {
     history.replaceState(null, "", "?tab=" + tab.dataset.tab);
   });
 });
+
+// Live activity: slide in only the songs that were not on screen before.
+(() => {
+  let seen = new Set();
+  const rows = (root) => root.querySelectorAll(".feed-row[data-pos]");
+  document.addEventListener("htmx:beforeSwap", (event) => {
+    if (event.detail.target.id === "activity-body") seen = new Set([...rows(event.detail.target)].map((r) => r.dataset.pos));
+  });
+  document.addEventListener("htmx:afterSwap", (event) => {
+    if (event.detail.target.id !== "activity-body") return;
+    rows(event.detail.target).forEach((r) => seen.has(r.dataset.pos) || r.classList.add("fresh"));
+  });
+})();

@@ -12,6 +12,18 @@
   </div>
 </div>
 
+{% if active %}
+<section class="activity">
+  <header class="activity-head">
+    <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+    <span class="eyebrow">Live</span>
+  </header>
+  <div id="activity-body" hx-get="/transfers/{{ transfer.id }}/activity" hx-trigger="every 1s" hx-swap="innerHTML">
+    {% include "partials/transfer_activity.html" %}
+  </div>
+</section>
+{% endif %}
+
 {% if transfer.spotify_playlist_id.startswith('public:playlist:') and transfer.total >= EMBED_TRACK_LIMIT %}
 <div class="alert info">
   Spotify's public page only lists the first {{ EMBED_TRACK_LIMIT }} songs of a playlist. If this one has more,
