@@ -215,13 +215,10 @@ class Worker:
             "transferId": transfer_id, "playlist": transfer["name"], "action": transfer["pending_action"],
         })
         if transfer["pending_action"] == "match":
-            if not self._match(transfer_id):
-                return
-            transfer = self.store.get_transfer(transfer_id)
-            if not transfer["auto_push"]:
+            # Nothing is written to YouTube Music before the user confirms.
+            if self._match(transfer_id):
                 self.store.update_transfer(transfer_id, status="review", pending_action=None)
-                return
-            self.store.update_transfer(transfer_id, pending_action="push")
+            return
         self._push(transfer_id)
 
     def _match(self, transfer_id: int) -> bool:
@@ -387,7 +384,5 @@ class Worker:
                                         "song": row["title"]})
 
 
-def new_transfer(store: Store, playlist: Playlist, privacy: str = "PRIVATE", auto_push: bool = False) -> int:
-    return store.create_transfer(
-        playlist.id, playlist.name, playlist.description, playlist.image_url, privacy, auto_push
-    )
+def new_transfer(store: Store, playlist: Playlist, privacy: str = "PRIVATE") -> int:
+    return store.create_transfer(playlist.id, playlist.name, playlist.description, playlist.image_url, privacy)

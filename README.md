@@ -35,7 +35,8 @@
 - **All your playlists**: the ones you created, the ones you collaborate on, and your **Liked Songs**.
 - **Works with Spotify Free**: upload the files saved by [Exportify](https://exportify.app) (every playlist and your Liked Songs), or paste a playlist link or the song links copied from the Spotify app.
 - **Smart matching**: compares title, artists, duration and *version*, so you get the studio recording instead of a live take, a karaoke or a sped-up edit.
-- **Review screen**: confident matches go straight in. Uncertain ones are shown side by side with alternatives, and you can accept, pick another version, search by hand or skip.
+- **Nothing happens behind your back**: spot2ytm searches, shows what it found and waits. You check the songs and confirm before any playlist is created on YouTube Music.
+- **Review screen**: uncertain matches are shown side by side with alternatives, and you can accept, pick another version, search by hand or skip.
 - **Re-export safely**: exporting the same playlist again only adds the new songs to the same YouTube Music playlist. No duplicates.
 - **Remembers everything**: a local match cache means a song is searched once, and your manual choices are reused in every playlist.
 - **Live progress**: while it works, the transfer page shows the song being searched, which search it is trying (ISRC, title and artist, videos), the last songs with what was found and the time left.
@@ -50,17 +51,26 @@
   <tr>
     <td width="50%">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/playlists-dark.png">
-        <img alt="Choosing playlists" src="docs/screenshots/playlists-light.png">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/import-dark.png">
+        <img alt="Choosing playlists from Exportify files" src="docs/screenshots/import-light.png">
       </picture>
-      <p align="center"><b>Pick playlists</b>: Liked Songs included, filter and select many at once</p>
+      <p align="center"><b>Pick playlists</b>: everything in your Exportify files, with names you can fix</p>
     </td>
     <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/live-dark.png">
+        <img alt="Live search progress" src="docs/screenshots/live-light.png">
+      </picture>
+      <p align="center"><b>Watch it search</b>: the song, the exact query, what was found and the time left</p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/review-dark.png">
         <img alt="Reviewing matches" src="docs/screenshots/review-light.png">
       </picture>
-      <p align="center"><b>Review matches</b>: confidence score, alternatives and manual search</p>
+      <p align="center"><b>Review, then confirm</b>: confidence score, alternatives and manual search</p>
     </td>
   </tr>
 </table>
@@ -144,7 +154,9 @@ That's all. No client secret is needed: spot2ytm uses the [PKCE flow](https://de
 
 > [!NOTE]
 > Spotify's Development Mode requires the app owner to have **Spotify Premium**, and allows up to 5 users per app.
-> On a Free account the **Web API** option is greyed out: use [Import with links](#import-with-links-no-login) instead.
+> On a Free account the **Web API** option is greyed out, and an app created earlier answers every request with
+> `403 Active premium subscription required for the owner of the app`. spot2ytm says so on the dashboard: click
+> **Disconnect and remove app** and use the [Exportify files](#exportify-files-recommended-on-spotify-free) instead.
 
 ### 2. YouTube Music
 
@@ -181,17 +193,19 @@ The headers last as long as that browser session (they become invalid if you log
 flowchart LR
     A[Spotify track<br/>title · artists · album · duration] --> B{In match cache?}
     B -- yes --> R
-    B -- no --> C[Search YouTube Music<br/>songs: artist + title]
+    B -- no --> C[Search YouTube Music<br/>ISRC first, then artist + title]
     C --> D[Score every result]
     D -- "≥ 85%" --> R[Result]
     D -- "lower" --> E[Search again<br/>title + all artists, then videos]
     E --> D2[Score and keep best 6]
     D2 --> R
-    R -- "≥ 85% matched" --> Y[(Added to YouTube Music)]
-    R -- "55–85% uncertain" --> V[You review]
+    R -- "≥ 85% matched" --> V[You review and confirm]
+    R -- "55–85% uncertain" --> V
     R -- "< 55% not found" --> V
-    V --> Y
+    V --> Y[(Playlist created on YouTube Music)]
 ```
+
+When the song has an ISRC (always in Exportify files and with a Spotify login), the first search uses it: YouTube Music returns that exact recording as the top result, so most songs are found with one search.
 
 Each candidate gets a score from 0 to 100%:
 
@@ -292,10 +306,14 @@ It is not designed for that: it has no login of its own and holds the credential
 ```
 spot2ytm/
 ├── spotify.py     Spotify Web API client: OAuth PKCE, playlists, Liked Songs
-├── ytm.py         YouTube Music access through ytmusicapi
+├── exportify.py   Reads Exportify .csv/.zip files
+├── public.py      Reads public Spotify pages (playlist, album and song links)
+├── ytm.py         YouTube Music access through ytmusicapi, cookies from the browser
 ├── matching.py    Normalisation and scoring of search results
-├── jobs.py        Background worker: fetch → match → (review) → push
+├── jobs.py        Background worker: fetch → match → review → push, live activity
 ├── db.py          SQLite: transfers, tracks, match cache, playlist links
+├── logs.py        pino-format JSON logs
+├── config.py      Settings from .env and the data directory
 ├── web.py         FastAPI routes and htmx endpoints
 ├── templates/     Jinja2 pages and partials
 └── static/        CSS, a little JS and htmx

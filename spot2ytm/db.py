@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS transfers (
     description TEXT NOT NULL DEFAULT '',
     image_url TEXT,
     privacy TEXT NOT NULL DEFAULT 'PRIVATE',
-    auto_push INTEGER NOT NULL DEFAULT 1,
     status TEXT NOT NULL DEFAULT 'queued',
     pending_action TEXT,
     error TEXT,
@@ -106,7 +105,7 @@ class Store:
 
     def create_transfer(
         self, spotify_playlist_id: str, name: str, description: str, image_url: str | None,
-        privacy: str, auto_push: bool,
+        privacy: str,
     ) -> int:
         now = time.time()
         with self.tx() as conn:
@@ -116,9 +115,9 @@ class Store:
             ).fetchone()
             cur = conn.execute(
                 """INSERT INTO transfers (spotify_playlist_id, name, description, image_url, privacy,
-                       auto_push, yt_playlist_id, pending_action, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, 'match', ?, ?)""",
-                (spotify_playlist_id, name, description, image_url, privacy, int(auto_push),
+                       yt_playlist_id, pending_action, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, 'match', ?, ?)""",
+                (spotify_playlist_id, name, description, image_url, privacy,
                  link["yt_playlist_id"] if link else None, now, now),
             )
             return int(cur.lastrowid)

@@ -34,7 +34,8 @@
 - **Todas as suas playlists**: as que você criou, as colaborativas e as suas **Músicas Curtidas**.
 - **Funciona com Spotify Free**: envie os arquivos salvos pelo [Exportify](https://exportify.app) (todas as playlists e as Curtidas), ou cole o link da playlist ou os links das músicas copiados do app do Spotify.
 - **Correspondência inteligente**: compara título, artistas, duração e *versão*. Você recebe a gravação de estúdio, e não a ao vivo, o karaokê ou a versão acelerada.
-- **Tela de revisão**: o que tem alta confiança entra direto. O que é duvidoso aparece lado a lado com alternativas, e você aceita, escolhe outra versão, busca na mão ou pula.
+- **Nada acontece sem você ver**: o spot2ytm busca, mostra o que encontrou e espera. Você confere as músicas e confirma antes de qualquer playlist ser criada no YouTube Music.
+- **Tela de revisão**: o que é duvidoso aparece lado a lado com alternativas, e você aceita, escolhe outra versão, busca na mão ou pula.
 - **Exportar de novo sem medo**: exportar a mesma playlist outra vez só adiciona as músicas novas na mesma playlist do YouTube Music. Sem duplicatas.
 - **Lembra de tudo**: com o cache local, cada música é buscada uma vez só, e suas escolhas manuais valem para todas as playlists.
 - **Progresso ao vivo**: enquanto trabalha, a página da transferência mostra a música que está sendo buscada, qual busca está sendo tentada (ISRC, título e artista, vídeos), as últimas músicas com o que foi encontrado e o tempo restante.
@@ -49,17 +50,26 @@
   <tr>
     <td width="50%">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/playlists-dark.png">
-        <img alt="Escolhendo playlists" src="docs/screenshots/playlists-light.png">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/import-dark.png">
+        <img alt="Escolhendo playlists dos arquivos do Exportify" src="docs/screenshots/import-light.png">
       </picture>
-      <p align="center"><b>Escolha as playlists</b>: inclusive as Curtidas, com filtro e seleção múltipla</p>
+      <p align="center"><b>Escolha as playlists</b>: tudo o que está nos arquivos do Exportify, com nomes que você pode corrigir</p>
     </td>
     <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/live-dark.png">
+        <img alt="Busca ao vivo" src="docs/screenshots/live-light.png">
+      </picture>
+      <p align="center"><b>Acompanhe a busca</b>: a música, a pesquisa exata, o que foi encontrado e o tempo restante</p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/review-dark.png">
         <img alt="Revisando correspondências" src="docs/screenshots/review-light.png">
       </picture>
-      <p align="center"><b>Revise</b>: nota de confiança, alternativas e busca manual</p>
+      <p align="center"><b>Revise e confirme</b>: nota de confiança, alternativas e busca manual</p>
     </td>
   </tr>
 </table>
@@ -143,7 +153,9 @@ Só isso. Não precisa de client secret, porque o spot2ytm usa o [fluxo PKCE](ht
 
 > [!NOTE]
 > O modo de desenvolvimento do Spotify exige que o dono do app tenha **Spotify Premium** e permite até 5 usuários por app.
-> Em conta Free a opção **Web API** fica desabilitada: use [Importar com links](#importar-com-links-sem-login).
+> Em conta Free a opção **Web API** fica desabilitada, e um app criado antes responde a toda consulta com
+> `403 Active premium subscription required for the owner of the app`. O spot2ytm avisa isso no painel: clique em
+> **Disconnect and remove app** e use os [arquivos do Exportify](#arquivos-do-exportify-recomendado-no-spotify-free).
 
 ### 2. YouTube Music
 
@@ -180,17 +192,19 @@ Os cabeçalhos valem enquanto durar a sessão do navegador. Se você sair da con
 flowchart LR
     A[Música do Spotify<br/>título · artistas · álbum · duração] --> B{Já está no cache?}
     B -- sim --> R
-    B -- não --> C[Busca no YouTube Music<br/>músicas: artista + título]
+    B -- não --> C[Busca no YouTube Music<br/>primeiro pelo ISRC, depois artista + título]
     C --> D[Nota para cada resultado]
     D -- "≥ 85%" --> R[Resultado]
     D -- "menor" --> E[Busca de novo<br/>título + todos os artistas, depois vídeos]
     E --> D2[Nota e guarda os 6 melhores]
     D2 --> R
-    R -- "≥ 85% encontrada" --> Y[(Adicionada ao YouTube Music)]
-    R -- "55–85% incerta" --> V[Você revisa]
+    R -- "≥ 85% encontrada" --> V[Você revisa e confirma]
+    R -- "55–85% incerta" --> V
     R -- "< 55% não encontrada" --> V
-    V --> Y
+    V --> Y[(Playlist criada no YouTube Music)]
 ```
+
+Quando a música tem ISRC (sempre nos arquivos do Exportify e com login no Spotify), a primeira busca usa esse código: o YouTube Music devolve exatamente aquela gravação como primeiro resultado, então a maioria das músicas é encontrada com uma busca só.
 
 | Sinal | Peso | Detalhes |
 |---|---|---|

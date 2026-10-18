@@ -17,18 +17,25 @@ TRACKS = [
 ]
 
 
-def make(store, auto_push=True):
+def make(store):
     spotify = FakeSpotify({"p1": TRACKS})
     yt = FakeYT(CATALOGUE)
     worker = Worker(store, spotify, yt, search_delay=0)
     pl = Playlist(id="p1", name="Britpop", owner_id="me", owner_name="Me", total=len(TRACKS))
-    tid = store.create_transfer(pl.id, pl.name, "", None, "PRIVATE", auto_push)
+    tid = store.create_transfer(pl.id, pl.name, "", None, "PRIVATE")
     return worker, yt, tid
 
 
-def test_full_transfer_with_auto_push(store):
-    worker, yt, tid = make(store)
+def match_and_push(worker, tid):
+    """Search, then confirm right away, as the user does after the review."""
     worker.run_once(tid)
+    worker.request(tid, "push")
+    worker.run_once(tid)
+
+
+def test_full_transfer(store):
+    worker, yt, tid = make(store)
+    match_and_push(worker, tid)
 
     transfer = store.get_transfer(tid)
     assert transfer["status"] == "done"
@@ -42,7 +49,7 @@ def test_full_transfer_with_auto_push(store):
 
 
 def test_review_first_then_push(store):
-    worker, yt, tid = make(store, auto_push=False)
+    worker, yt, tid = make(store)
     worker.run_once(tid)
     assert store.get_transfer(tid)["status"] == "review"
     assert yt.playlists == {}
@@ -60,12 +67,12 @@ def test_review_first_then_push(store):
 
 def test_manual_choice_is_cached_for_next_transfers(store):
     worker, yt, tid = make(store)
-    worker.run_once(tid)
+    match_and_push(worker, tid)
     hurt = store.tracks(tid, ("not_found",))[0]
     worker.choose(hurt["id"], song("v-hurt-cash", "Hurt", ["Johnny Cash"], 218))
 
     searches_before = len(yt.searches)
-    tid2 = store.create_transfer("p1", "Britpop", "", None, "PRIVATE", True)
+    tid2 = store.create_transfer("p1", "Britpop", "", None, "PRIVATE")
     worker.run_once(tid2)
     assert len(yt.searches) == searches_before  # everything came from the cache
     assert store.count_tracks(tid2)["matched"] == 4
@@ -73,26 +80,26 @@ def test_manual_choice_is_cached_for_next_transfers(store):
 
 def test_second_export_only_adds_new_songs(store):
     worker, yt, tid = make(store)
-    worker.run_once(tid)
+    match_and_push(worker, tid)
     pid = store.get_transfer(tid)["yt_playlist_id"]
 
     worker.spotify.data["p1"] = TRACKS + [track("Champagne Supernova", ["Oasis"], 451, spotify_id="x2")]
     yt.catalogue.append(song("v-live", "Live Forever", ["Oasis"], 277))
     worker.spotify.data["p1"].append(track("Live Forever", ["Oasis"], 276))
 
-    tid2 = store.create_transfer("p1", "Britpop", "", None, "PRIVATE", True)
+    tid2 = store.create_transfer("p1", "Britpop", "", None, "PRIVATE")
     assert store.get_transfer(tid2)["yt_playlist_id"] == pid  # linked to the first export
-    worker.run_once(tid2)
+    match_and_push(worker, tid2)
     assert yt.playlists == {pid: ["v-wonderwall", "v-champagne", "v-live"]}
 
 
 def test_recreates_playlist_deleted_on_youtube(store):
     worker, yt, tid = make(store)
-    worker.run_once(tid)
+    match_and_push(worker, tid)
     yt.playlists.clear()
 
-    tid2 = store.create_transfer("p1", "Britpop", "", None, "PRIVATE", True)
-    worker.run_once(tid2)
+    tid2 = store.create_transfer("p1", "Britpop", "", None, "PRIVATE")
+    match_and_push(worker, tid2)
     new_pid = store.get_transfer(tid2)["yt_playlist_id"]
     assert yt.playlists[new_pid] == ["v-wonderwall", "v-champagne"]
 
@@ -105,7 +112,7 @@ def test_error_is_reported_and_resumable(store):
         raise RuntimeError("YouTube said no")
 
     yt.add_items = boom
-    worker.run_once(tid)
+    match_and_push(worker, tid)
     transfer = store.get_transfer(tid)
     assert transfer["status"] == "error"
     assert "YouTube said no" in transfer["error"]
@@ -126,7 +133,7 @@ def test_cancel_stops_matching(store):
 
 
 def test_skip_and_retry_unresolved(store):
-    worker, yt, tid = make(store, auto_push=False)
+    worker, yt, tid = make(store)
     worker.run_once(tid)
     hurt = store.tracks(tid, ("not_found",))[0]
     worker.skip(hurt["id"])
@@ -157,14 +164,14 @@ def test_isrc_is_searched_first_and_only_its_top_result_kept(store):
 
 
 def test_key_for_name_ignores_case_and_underscores(store):
-    tid = store.create_transfer("public:playlist:abc", "Dark_Metal", "", None, "PRIVATE", True)
+    tid = store.create_transfer("public:playlist:abc", "Dark_Metal", "", None, "PRIVATE")
     assert store.key_for_name("dark  metal") == "public:playlist:abc"
     assert store.key_for_name("Darker Metal") is None
     assert tid
 
 
 def test_live_activity_while_matching(store):
-    worker, yt, tid = make(store, auto_push=False)
+    worker, yt, tid = make(store)
     seen = []
     search = yt.search
 

@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- README: new screenshots (dashboard, Exportify import, live search, review), the matching diagram
+  shows the ISRC search and the confirmation step, and the Spotify note explains the Premium 403.
 - New look: warm monochrome palette, Instrument Serif headings with Geist Sans and Geist Mono
   (bundled, no external requests), flat 1px-bordered surfaces, black primary buttons, pastel
   status tags and subtle entry motion. Fixed horizontal scrolling on phones.
@@ -38,6 +40,13 @@ All notable changes to this project are documented here. The format follows
 - Search YouTube Music by ISRC first when it is known, which finds the exact recording.
 - Connect YouTube Music automatically by reading the YouTube cookies of a browser on this machine,
   instead of pasting request headers by hand.
+
+### Removed
+
+- The internal "create without review" mode (`auto_push`): the UI stopped offering it when every
+  transfer started waiting for confirmation, so the worker now always stops after the search. Old
+  databases keep the unused column.
+- Screenshots of the Spotify playlists page, replaced by the Exportify import and the live view.
 
 ## [0.1.0] - 2026-10-17
 

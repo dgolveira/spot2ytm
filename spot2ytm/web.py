@@ -342,7 +342,7 @@ def create_app(
     def create_named_transfer(name: str, tracks: list[Track]) -> int:
         # Same name, same YouTube Music playlist: importing again only adds new songs.
         key = store.key_for_name(name) or "named:" + " ".join(name.lower().split())
-        transfer_id = store.create_transfer(key, name, "", None, "PRIVATE", False)
+        transfer_id = store.create_transfer(key, name, "", None, "PRIVATE")
         store.add_tracks(transfer_id, tracks)
         worker.enqueue(transfer_id)
         return transfer_id
