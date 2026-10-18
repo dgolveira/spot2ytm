@@ -135,7 +135,9 @@ def create_app(
     templates.env.globals["EMBED_TRACK_LIMIT"] = EMBED_TRACK_LIMIT
     templates.env.globals["privacy_options"] = PRIVACY_OPTIONS
     # No browser to read cookies from inside the container.
+    # In Docker the browser is out of reach, unless docker-compose.browser.yml mounts it.
     templates.env.globals["in_docker"] = bool(os.environ.get("SPOT2YTM_IN_DOCKER"))
+    templates.env.globals["browser_access"] = bool(os.environ.get("SPOT2YTM_BROWSER_ACCESS"))
 
     def render(request: Request, name: str, status_code: int = 200, headers: dict | None = None, **ctx):
         ctx.setdefault("spotify_connected", app.state.spotify.connected)

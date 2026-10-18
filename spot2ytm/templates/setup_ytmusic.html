@@ -7,9 +7,9 @@
   <p class="muted">YouTube Music has no public API for playlists, so spot2ytm talks to it the way your browser does,
     with the session of a browser where you are logged in. It stays in your local <code>data/</code> folder.</p>
 
-  {% if in_docker %}
-  <div class="alert info">spot2ytm is running in Docker, where it cannot see your browser. Paste the headers below.
-    (Running it with <code>pip install .</code> instead lets it read them from your browser automatically.)</div>
+  {% if in_docker and not browser_access %}
+  <div class="alert info">spot2ytm is running in Docker, where it cannot see your browser. Paste the headers below,
+    or start it with <code>docker-compose.browser.yml</code> to let it read your browser's login.</div>
   {% else %}
   <h2>Automatic</h2>
   <p>Pick the browser where you are logged in to <a href="https://music.youtube.com" target="_blank" rel="noopener">music.youtube.com</a>.
@@ -20,12 +20,16 @@
     </select>
     <button class="btn primary">Connect from browser</button>
   </form>
+  {% if in_docker %}
+  <p class="muted small">Running in Docker: only the browser folder mounted by <code>docker-compose.browser.yml</code> can be read.</p>
+  {% else %}
   <p class="muted small">On Linux your system may ask for your keyring password, which the browser uses to protect its cookies.
     On Windows, Chrome and Edge lock their cookies: use Firefox, or paste the headers below.</p>
+  {% endif %}
 
   {% endif %}
 
-  <details {% if headers_raw or in_docker %}open{% endif %}>
+  <details {% if headers_raw or (in_docker and not browser_access) %}open{% endif %}>
     <summary><strong>Or paste the headers by hand</strong></summary>
   <ol class="steps">
     <li>Open <a href="https://music.youtube.com" target="_blank" rel="noopener">music.youtube.com</a> in Chrome, Edge or Firefox and make sure you are logged in.</li>

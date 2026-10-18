@@ -99,7 +99,16 @@ docker compose up -d
 ```
 
 Then open **http://127.0.0.1:8000**. Your data is kept in `./data`, logs with `docker compose logs -f`.
-In Docker the app cannot read your browser's cookies, so connect YouTube Music by pasting the request headers.
+In Docker the app cannot see your browser, so connect YouTube Music by pasting the request headers.
+
+On a Linux desktop you can let it read your browser's login instead (Edge by default, set `SPOT2YTM_BROWSER_DIR` in `.env` for another browser):
+
+```bash
+ln -s docker-compose.browser.yml docker-compose.override.yml   # docker compose loads it by itself
+docker compose up -d
+```
+
+This mounts the browser profile read-only and your desktop session bus, so the app can reach the system keyring that protects the cookies, and turns off Docker's AppArmor profile for the container, which blocks that bus. The container can then talk to your desktop session: do it only on your own machine.
 
 > [!IMPORTANT]
 > Use `127.0.0.1`, **not** `localhost`, in the Spotify redirect URI below.
@@ -166,7 +175,7 @@ YouTube Music has no public API for managing playlists, so spot2ytm uses [ytmusi
 
 - On Linux, Chrome-based browsers encrypt cookies with a key kept in the system keyring, so you may be asked to unlock it. If several apps (VS Code, for example) saved a key under the same name, spot2ytm tries each one.
 - On Windows, Chrome and Edge lock their cookies: use Firefox or paste the headers by hand.
-- Not available in Docker, where there is no browser.
+- In Docker, only with `docker-compose.browser.yml` on a Linux desktop (see [Option B](#option-b-docker)).
 
 **By hand:**
 

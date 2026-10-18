@@ -1,6 +1,8 @@
 # Local state: tokens, YouTube Music headers, match cache. Never commit this.
 data/
 .env
+# Machine-specific compose settings (e.g. a link to docker-compose.browser.yml).
+docker-compose.override.yml
 
 __pycache__/
 *.py[cod]

@@ -123,14 +123,25 @@ def browser_cookies(browser: str) -> dict[str, str]:
 
     cookies: dict[str, str] = {}
     failures = 0
+    keyring_error = None
     for secret in _candidate_secrets(browser):
         logger = _CookieLogger()
-        with _keyring_secret(secret):
-            jar = extract_cookies_from_browser(browser, logger=logger)
+        try:
+            with _keyring_secret(secret):
+                jar = extract_cookies_from_browser(browser, logger=logger)
+        except Exception as exc:
+            if not type(exc).__module__.startswith(("jeepney", "secretstorage", "dbus")):
+                raise
+            # yt-dlp's own keyring lookup failed (no session bus, or blocked by AppArmor in Docker)
+            log.debug("keyring lookup failed: %s", exc)
+            keyring_error = exc
+            continue
         cookies = {c.name: c.value for c in jar if c.domain.lstrip(".").endswith("youtube.com") and c.value}
         failures = logger.decrypt_failures
         if not failures:
             return cookies
+    if keyring_error is not None and not cookies:
+        raise YTMError(f"the system keyring could not be reached ({keyring_error})")
     if failures and "SAPISID" not in cookies and "__Secure-3PAPISID" not in cookies:
         raise YTMError(
             f"the browser's cookies are encrypted with a key from the system keyring that could not be used "

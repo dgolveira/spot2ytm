@@ -26,6 +26,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `docker-compose.browser.yml`: connect YouTube Music from the browser inside Docker on a Linux
+  desktop. It mounts the browser profile read-only and the session bus to reach the keyring, with
+  AppArmor off for the container. Link it as `docker-compose.override.yml` to make it the default.
+  A keyring that cannot be reached is now reported as such instead of a raw D-Bus error.
 - Spotify can be disconnected from every state of the dashboard card, and "Remove app" forgets the
   developer app (client ID) to start over. When Spotify refuses the app because its owner has no
   Premium (403 "Active premium subscription required"), the dashboard and the playlists page say so

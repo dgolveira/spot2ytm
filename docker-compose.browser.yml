@@ -1,0 +1,37 @@
+# Lets spot2ytm read the YouTube login of your browser from inside Docker (Linux desktop only).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.browser.yml up -d
+#
+# or make it the default on this machine (docker compose loads the override file by itself):
+#
+#   ln -s docker-compose.browser.yml docker-compose.override.yml
+#
+# It mounts one browser profile read-only and your desktop session bus, so the app can ask the
+# system keyring for the key that encrypts the browser's cookies. The container can then talk to
+# the services of your desktop session: only use it on your own machine.
+#
+# SPOT2YTM_BROWSER_DIR is the browser's folder in ~/.config: microsoft-edge (default),
+# google-chrome, chromium, BraveSoftware/Brave-Browser, vivaldi or opera.
+# SPOT2YTM_UID must be your user id (`id -u`) for the session bus to accept the container.
+services:
+  spot2ytm:
+    user: "${SPOT2YTM_UID:-1000}:${SPOT2YTM_GID:-1000}"
+    # Docker's default AppArmor profile blocks the session bus.
+    security_opt:
+      - apparmor=unconfined
+    environment:
+      SPOT2YTM_BROWSER_ACCESS: "1"
+      DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/${SPOT2YTM_UID:-1000}/bus
+      XDG_CURRENT_DESKTOP: ${XDG_CURRENT_DESKTOP:-GNOME}
+    volumes:
+      - type: bind
+        source: ${HOME}/.config/${SPOT2YTM_BROWSER_DIR:-microsoft-edge}
+        target: /home/app/.config/${SPOT2YTM_BROWSER_DIR:-microsoft-edge}
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /run/user/${SPOT2YTM_UID:-1000}/bus
+        target: /run/user/${SPOT2YTM_UID:-1000}/bus
+        bind:
+          create_host_path: false

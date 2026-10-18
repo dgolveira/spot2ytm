@@ -155,3 +155,36 @@ def test_ytmusic_setup_page_offers_browsers(app_and_client):
     _, client = app_and_client
     page = client.get("/setup/ytmusic").text
     assert "Connect from browser" in page and "Microsoft Edge" in page
+
+
+
+def test_ytmusic_setup_in_docker(settings, monkeypatch):
+    def setup_page():
+        app = create_app(settings, spotify=FakeSpotify(), yt=FakeYT(), start_worker=False)
+        with TestClient(app, base_url="http://127.0.0.1:8000") as client:
+            return client.get("/setup/ytmusic").text
+
+    monkeypatch.setenv("SPOT2YTM_IN_DOCKER", "1")
+    page = setup_page()
+    assert "cannot see your browser" in page and "Connect from browser" not in page
+
+    monkeypatch.setenv("SPOT2YTM_BROWSER_ACCESS", "1")  # docker-compose.browser.yml
+    page = setup_page()
+    assert "Connect from browser" in page and "cannot see your browser" not in page
+
+
+def test_browser_cookies_reports_unreachable_keyring(monkeypatch):
+    import yt_dlp.cookies
+
+    from spot2ytm import ytm
+
+    class DBusErrorResponse(Exception):
+        __module__ = "jeepney.wrappers"
+
+    def blocked(browser, logger):
+        raise DBusErrorResponse("An AppArmor policy prevents this sender")
+
+    monkeypatch.setattr(yt_dlp.cookies, "extract_cookies_from_browser", blocked)
+    monkeypatch.setattr(ytm, "_candidate_secrets", lambda browser: [None])
+    with pytest.raises(ytm.YTMError, match="system keyring could not be reached"):
+        ytm.browser_cookies("edge")
