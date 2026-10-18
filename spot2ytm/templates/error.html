@@ -2,7 +2,20 @@
 {% block content %}
 <section class="narrow">
   <h1>Something went wrong</h1>
+  {% if spotify_premium_error %}
+  <div class="alert error">
+    Spotify blocks this developer app: its owner needs an active Premium subscription.
+    On Spotify Free, import from an Exportify file instead. It reads every playlist and your Liked Songs.
+  </div>
+  {% else %}
   <div class="alert error">{{ message }}</div>
-  <a class="btn" href="/">Back to the dashboard</a>
+  {% endif %}
+  <div class="button-row">
+    {% if spotify_actions %}
+    <a class="btn primary" href="/import">Import from Exportify</a>
+    <form method="post" action="/auth/spotify/{{ 'forget' if spotify_premium_error else 'disconnect' }}"><button class="btn">Disconnect Spotify</button></form>
+    {% endif %}
+    <a class="btn ghost" href="/">Back to the dashboard</a>
+  </div>
 </section>
 {% endblock %}

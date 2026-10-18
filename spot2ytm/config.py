@@ -67,6 +67,12 @@ class Settings:
         write_private(self.settings_file, json.dumps(stored, indent=2))
         self.spotify_client_id = client_id
 
+    def forget_spotify_client_id(self) -> None:
+        stored = self._read_stored()
+        stored.pop("spotify_client_id", None)
+        write_private(self.settings_file, json.dumps(stored, indent=2))
+        self.spotify_client_id = os.environ.get("SPOT2YTM_SPOTIFY_CLIENT_ID", "")
+
     def _read_stored(self) -> dict:
         try:
             return json.loads(self.settings_file.read_text())

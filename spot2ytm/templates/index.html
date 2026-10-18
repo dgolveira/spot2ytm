@@ -14,13 +14,24 @@
     {% if spotify_user %}
       <p>Connected as <strong>{{ spotify_user.display_name or spotify_user.id }}</strong></p>
       <form method="post" action="/auth/spotify/disconnect"><button class="btn ghost small">Disconnect</button></form>
+    {% elif spotify_connected and spotify_premium_error %}
+      <p class="error-text">You logged in, but Spotify blocks this developer app: its owner needs an active Premium subscription.</p>
+      <div class="button-row">
+        <form method="post" action="/auth/spotify/forget"><button class="btn">Disconnect and remove app</button></form>
+      </div>
     {% elif spotify_connected and spotify_error %}
       <p class="error-text">Connected, but Spotify returned an error: {{ spotify_error }}</p>
-      <a class="btn" href="/auth/spotify/login">Reconnect</a>
+      <div class="button-row">
+        <a class="btn" href="/auth/spotify/login">Reconnect</a>
+        <form method="post" action="/auth/spotify/disconnect"><button class="btn ghost">Disconnect</button></form>
+      </div>
     {% elif client_id_set %}
       <p class="muted">Your app is configured. Log in to allow read-only access to your playlists.</p>
       <a class="btn" href="/auth/spotify/login">Connect Spotify</a>
-      <a class="link small" href="/setup/spotify">Change client ID</a>
+      <div class="button-row">
+        <a class="link small" href="/setup/spotify">Change client ID</a>
+        <form method="post" action="/auth/spotify/forget"><button class="link small">Remove app</button></form>
+      </div>
     {% else %}
       <p class="muted">Logging in needs a Spotify developer app, which Spotify only allows on Premium accounts.</p>
       <a class="btn" href="/setup/spotify">Set up Spotify</a>

@@ -24,6 +24,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Spotify can be disconnected from every state of the dashboard card, and "Remove app" forgets the
+  developer app (client ID) to start over. When Spotify refuses the app because its owner has no
+  Premium (403 "Active premium subscription required"), the dashboard and the playlists page say so
+  and point to the Exportify import, instead of showing the raw API error.
 - Live view on the transfer page: the song being searched and the exact search being tried
   (ISRC, title and artist, videos), the last songs with what was found and the confidence,
   speed and time left, a progress bar split by result and a level-meter animation.

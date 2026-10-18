@@ -193,6 +193,8 @@ footer a { color: var(--muted); }
 .btn.small { padding: 0.4rem 0.65rem; font-size: 0.8rem; }
 .btn[disabled], .btn.disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .link { color: var(--muted); }
+button.link { background: none; border: 0; padding: 0; font-family: inherit; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+button.link:hover { color: var(--strong); }
 
 .stack { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; margin: 1.5rem 0; }
 .stack label { font-weight: 500; font-size: 0.9rem; color: var(--strong); }

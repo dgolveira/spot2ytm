@@ -97,6 +97,29 @@ def test_foreign_host_refused(app_and_client):
     assert client.get("/", headers={"host": "evil.example"}).status_code == 400
 
 
+def test_spotify_premium_error_offers_disconnect(app_and_client, settings):
+    from spot2ytm.spotify import SpotifyPremiumError
+
+    app, client = app_and_client
+    settings.save_spotify_client_id("0123456789abcdef0123456789abcdef")
+
+    def refuse():
+        raise SpotifyPremiumError("premium required")
+
+    app.state.spotify.me = refuse
+    app.state.spotify.liked_songs_playlist = refuse
+    page = client.get("/").text
+    assert "needs an active Premium subscription" in page and 'action="/auth/spotify/forget"' in page
+    playlists = client.get("/playlists")
+    assert playlists.status_code == 502 and "Import from Exportify" in playlists.text
+
+    resp = client.post("/auth/spotify/forget", follow_redirects=False)
+    assert resp.status_code == 303
+    assert settings.spotify_client_id == ""
+    assert not app.state.spotify.connected
+    assert "Set up Spotify" in client.get("/").text
+
+
 def test_spotify_login_redirect(app_and_client):
     _, client = app_and_client
     resp = client.get("/auth/spotify/login", follow_redirects=False)

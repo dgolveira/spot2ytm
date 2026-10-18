@@ -3,7 +3,11 @@ import time
 
 import httpx
 
-from spot2ytm.spotify import SpotifyClient, authorize_url, make_pkce_pair, parse_playlist, parse_track_entry
+import pytest
+
+from spot2ytm.spotify import (
+    SpotifyClient, SpotifyPremiumError, authorize_url, make_pkce_pair, parse_playlist, parse_track_entry,
+)
 
 
 def item(name, artists, track_id="t1", **extra):
@@ -79,3 +83,15 @@ def test_paginates_items_and_refreshes_token(tmp_path):
     stored = json.loads(token_file.read_text())
     assert stored["access_token"] == "new" and stored["refresh_token"] == "r"
     assert stored["expires_at"] > time.time()
+
+
+def test_premium_required_is_its_own_error(tmp_path):
+    token_file = tmp_path / "token.json"
+    token_file.write_text(json.dumps({"access_token": "a", "refresh_token": "r", "expires_at": time.time() + 3600}))
+
+    def handler(request: httpx.Request):
+        return httpx.Response(403, text="Active premium subscription required for the owner of the app.")
+
+    client = SpotifyClient("cid", token_file, transport=httpx.MockTransport(handler))
+    with pytest.raises(SpotifyPremiumError):
+        client.me()

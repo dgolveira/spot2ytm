@@ -26,7 +26,9 @@ from .jobs import Worker, new_transfer
 from .logs import Timer
 from .models import Candidate, Track
 from .public import EMBED_TRACK_LIMIT, PublicSpotify, PublicSpotifyError, parse_link, track_ids
-from .spotify import LIKED_SONGS_ID, SpotifyAuthError, SpotifyClient, SpotifyError, authorize_url, make_pkce_pair
+from .spotify import (
+    LIKED_SONGS_ID, SpotifyAuthError, SpotifyClient, SpotifyError, SpotifyPremiumError, authorize_url, make_pkce_pair,
+)
 from .ytm import BROWSERS, YTMError, YTMusicClient
 
 log = logging.getLogger(__name__)
@@ -170,11 +172,12 @@ def create_app(
             try:
                 spotify_user = app.state.spotify.me()
             except SpotifyError as exc:
-                spotify_error = str(exc)
+                spotify_error = exc
         return render(
             request, "index.html",
             spotify_user=spotify_user,
             spotify_error=spotify_error,
+            spotify_premium_error=isinstance(spotify_error, SpotifyPremiumError),
             yt_account=app.state.yt.account(),
             client_id_set=bool(settings.spotify_client_id),
             transfers=(summaries := transfer_summaries()),
@@ -238,6 +241,17 @@ def create_app(
     @app.post("/auth/spotify/disconnect")
     def spotify_disconnect():
         app.state.spotify.disconnect()
+        log.info("Spotify disconnected")
+        return RedirectResponse("/", 303)
+
+    @app.post("/auth/spotify/forget")
+    def spotify_forget():
+        """Log out and forget the developer app, back to the first step."""
+        app.state.spotify.disconnect()
+        settings.forget_spotify_client_id()
+        app.state.spotify = SpotifyClient(settings.spotify_client_id, settings.spotify_token_file)
+        worker.spotify = app.state.spotify
+        log.info("Spotify app removed")
         return RedirectResponse("/", 303)
 
     # -- YouTube Music --------------------------------------------------------
@@ -283,7 +297,8 @@ def create_app(
         except SpotifyAuthError:
             return RedirectResponse("/setup/spotify?error=Please+connect+Spotify+again", 303)
         except SpotifyError as exc:
-            return render(request, "error.html", status_code=502, message=f"Spotify error: {exc}")
+            return render(request, "error.html", status_code=502, message=f"Spotify error: {exc}",
+                          spotify_actions=True, spotify_premium_error=isinstance(exc, SpotifyPremiumError))
         return render(request, "playlists.html", playlists=items, last=store.last_transfer_by_playlist())
 
     def after_create(created: list[int]):

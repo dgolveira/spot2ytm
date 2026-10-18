@@ -44,6 +44,10 @@ class SpotifyAuthError(SpotifyError):
     """Not connected, or the refresh token was revoked."""
 
 
+class SpotifyPremiumError(SpotifyError):
+    """Spotify refuses developer apps whose owner is not on Premium."""
+
+
 def make_pkce_pair() -> tuple[str, str]:
     verifier = secrets.token_urlsafe(64)[:128]
     digest = hashlib.sha256(verifier.encode()).digest()
@@ -167,6 +171,10 @@ class SpotifyClient:
                 log.warning("Spotify server error, retrying", extra={"url": url, "statusCode": resp.status_code})
                 time.sleep(1 + attempt)
                 continue
+            if resp.status_code == 403 and "premium" in resp.text.lower():
+                raise SpotifyPremiumError(
+                    "Spotify refuses this developer app because its owner has no active Premium subscription."
+                )
             if resp.status_code >= 400:
                 raise SpotifyError(f"GET {url} -> {resp.status_code}: {resp.text[:300]}")
             return resp.json()
